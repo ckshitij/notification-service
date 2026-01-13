@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/ckshitij/notification-srv/internal/config"
+	db "github.com/ckshitij/notification-srv/internal/db/mysql"
 	"github.com/ckshitij/notification-srv/internal/logger"
 	"github.com/ckshitij/notification-srv/internal/server"
 )
@@ -27,7 +28,13 @@ func main() {
 	}
 
 	ctx := context.Background()
-	router := server.NewRouter(log)
+	database, err := db.New(cfg.MySQL)
+	if err != nil {
+		log.Fatal(ctx, "failed to connect to mysql", logger.Error(err))
+	}
+	defer database.Close()
+
+	router := server.NewRouter(log, database)
 
 	addr := ":" + fmt.Sprint(cfg.App.Port)
 	srv := server.New(addr, log, router)

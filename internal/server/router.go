@@ -3,6 +3,7 @@ package server
 import (
 	"net/http"
 
+	db "github.com/ckshitij/notification-srv/internal/db/mysql"
 	"github.com/ckshitij/notification-srv/internal/logger"
 	"github.com/ckshitij/notification-srv/internal/metrics"
 	"github.com/go-chi/chi/v5"
@@ -14,7 +15,7 @@ const (
 	InternalPath = "/internal"
 )
 
-func NewRouter(log logger.Logger) http.Handler {
+func NewRouter(log logger.Logger, database *db.DB) http.Handler {
 	r := chi.NewRouter()
 
 	r.Use(RequestIDMiddleware(log))
@@ -25,14 +26,12 @@ func NewRouter(log logger.Logger) http.Handler {
 	// Base path group
 	r.Route(BasePath, func(r chi.Router) {
 
-		// Health
-		r.Get("/hell", HealthHandler)
-
 	})
 
 	r.Route(InternalPath, func(r chi.Router) {
 		// Health
-		r.Get("/health", HealthHandler)
+		r.Get("/health", LivenessHandler)
+		r.Get("/ready", ReadinessHandler(database))
 		r.Get("/metrics", metrics.PromHandler().ServeHTTP)
 	})
 

@@ -12,6 +12,10 @@ mysql:
   password: Notif@1234!
   params: "parseTime=true&charset=utf8mb4&loc=UTC"
 
+  max_open_conns: 25
+  max_idle_conns: 10
+  conn_max_lifetime: 300 # seconds
+
 redis:
   addr: "localhost:6379"
   password: "Redis@123"

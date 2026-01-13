@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/spf13/viper"
 )
@@ -22,12 +23,15 @@ type AppConfig struct {
 }
 
 type MySQLConfig struct {
-	Host     string `mapstructure:"host"`
-	Port     int    `mapstructure:"port"`
-	Database string `mapstructure:"database"`
-	Username string `mapstructure:"username"`
-	Password string `mapstructure:"password"`
-	Params   string `mapstructure:"params"`
+	Host            string        `mapstructure:"host"`
+	Port            int           `mapstructure:"port"`
+	Database        string        `mapstructure:"database"`
+	Username        string        `mapstructure:"username"`
+	Password        string        `mapstructure:"password"`
+	Params          string        `mapstructure:"params"`
+	MaxOpenConns    int           `mapstructure:"max_open_conns"`
+	MaxIdleConns    int           `mapstructure:"max_idle_conns"`
+	ConnMaxLifetime time.Duration `mapstructure:"conn_max_lifetime"`
 }
 
 func (m MySQLConfig) DSN() string {
