@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	BasePath     = "/notifications-srv/api"
+	BasePath     = "/notify-srv/api"
 	InternalPath = "/internal"
 )
 
