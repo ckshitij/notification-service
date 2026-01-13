@@ -203,3 +203,36 @@ func (r *MySQLRepository) ListVersions(ctx context.Context, templateID int64) ([
 
 	return versions, nil
 }
+
+func (r *MySQLRepository) ListTemplatesWithActiveVersion(ctx context.Context, filter ListTemplatesFilter) ([]TemplateWithActiveVersion, error) {
+
+	query, args := GetAllTemplatesQuery(filter)
+	rows, err := r.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []TemplateWithActiveVersion
+
+	for rows.Next() {
+		var t TemplateWithActiveVersion
+		if err := rows.Scan(
+			&t.ID,
+			&t.Name,
+			&t.Description,
+			&t.Channel,
+			&t.Type,
+			&t.ActiveVersion,
+			&t.Subject,
+			&t.Body,
+			&t.CreatedAt,
+			&t.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		out = append(out, t)
+	}
+
+	return out, nil
+}

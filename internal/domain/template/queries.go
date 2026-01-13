@@ -70,3 +70,40 @@ const (
 		ORDER BY version DESC
 	`
 )
+
+func GetAllTemplatesQuery(filter ListTemplatesFilter) (string, []any) {
+	query := `
+		SELECT
+			t.id,
+			t.name,
+			t.description,
+			t.channel,
+			t.type,
+			t.active_version,
+			v.subject,
+			v.body,
+			t.created_at,
+			t.updated_at
+		FROM templates t
+		JOIN template_versions v
+			ON v.template_id = t.id
+		   AND v.version = t.active_version
+		WHERE 1=1
+	`
+
+	args := []any{}
+
+	if filter.Channel != nil {
+		query += " AND t.channel = ?"
+		args = append(args, *filter.Channel)
+	}
+
+	if filter.Type != nil {
+		query += " AND t.type = ?"
+		args = append(args, *filter.Type)
+	}
+
+	query += " ORDER BY t.created_at DESC"
+
+	return query, args
+}

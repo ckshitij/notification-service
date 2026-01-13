@@ -1,0 +1,237 @@
+openapi: 3.0.3
+
+info:
+  title: Notification Service - Template APIs
+  description: Template management and rendering APIs for Notification Service
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8098/notifications-srv/api/v1
+
+tags:
+  - name: Templates
+    description: Template management and rendering
+
+paths:
+
+  /templates:
+    post:
+      tags: [Templates]
+      summary: Create a user-defined template
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTemplateRequest"
+      responses:
+        "201":
+          description: Template created successfully
+        "400":
+          description: Invalid request
+
+  /templates/{channel}/{name}/versions:
+    post:
+      tags: [Templates]
+      summary: Add a new version to a template
+      parameters:
+        - $ref: "#/components/parameters/Channel"
+        - $ref: "#/components/parameters/TemplateName"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddVersionRequest"
+      responses:
+        "201":
+          description: Version created
+        "400":
+          description: Invalid request
+
+    get:
+      tags: [Templates]
+      summary: List all versions of a template
+      parameters:
+        - $ref: "#/components/parameters/Channel"
+        - $ref: "#/components/parameters/TemplateName"
+      responses:
+        "200":
+          description: List of template versions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TemplateVersion"
+
+  /templates/{channel}/{name}:
+    post:
+      tags: [Templates]
+      summary: Render a template (preview)
+      parameters:
+        - $ref: "#/components/parameters/Channel"
+        - $ref: "#/components/parameters/TemplateName"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RenderTemplateRequest"
+      responses:
+        "200":
+          description: Rendered template output
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RenderedTemplate"
+
+  /templates/summary:
+    get:
+      tags: [Templates]
+      summary: List templates with active version
+      description: >
+        Returns all templates joined with their active version.
+        This is a summary endpoint intended for admin and UI usage.
+      parameters:
+        - name: channel
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [email, slack, in_app]
+        - name: type
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [system, user]
+      responses:
+        "200":
+          description: List of templates with active version
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TemplateSummary"
+
+
+components:
+
+  parameters:
+    Channel:
+      name: channel
+      in: path
+      required: true
+      schema:
+        type: string
+        enum: [email, slack, in_app]
+
+    TemplateName:
+      name: name
+      in: path
+      required: true
+      schema:
+        type: string
+        example: custom_welcome
+
+  schemas:
+
+    CreateTemplateRequest:
+      type: object
+      required: [name, channel]
+      properties:
+        name:
+          type: string
+          example: custom_welcome
+        description:
+          type: string
+          example: User welcome email
+        channel:
+          type: string
+          enum: [email, slack, in_app]
+
+    AddVersionRequest:
+      type: object
+      required: [body]
+      properties:
+        subject:
+          type: string
+          example: Welcome {{.UserName}}
+        body:
+          type: string
+          example: Hi {{.UserName}}, welcome to {{.AppName}}!
+
+    RenderTemplateRequest:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          additionalProperties: true
+          example:
+            UserName: Kshitij
+            AppName: NotifyX
+
+    RenderedTemplate:
+      type: object
+      properties:
+        subject:
+          type: string
+          example: Welcome Kshitij
+        body:
+          type: string
+          example: Hi Kshitij, welcome to NotifyX!
+
+    TemplateVersion:
+      type: object
+      properties:
+        version:
+          type: integer
+          example: 2
+        is_active:
+          type: boolean
+          example: true
+        created_at:
+          type: string
+          format: date-time
+
+    TemplateSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        name:
+          type: string
+          example: custom_welcome
+        description:
+          type: string
+          example: User welcome email
+        channel:
+          type: string
+          enum: [email, slack, in_app]
+        type:
+          type: string
+          enum: [system, user]
+        active_version:
+          type: integer
+          example: 2
+        subject:
+          type: string
+          nullable: true
+          example: Welcome {{.UserName}}
+        body:
+          type: string
+          example: Hi {{.UserName}}, welcome to {{.AppName}}!
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-01-14T10:12:45Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2026-01-14T10:15:02Z"
+

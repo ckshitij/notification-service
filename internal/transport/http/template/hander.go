@@ -120,3 +120,35 @@ func (h *Handler) AddVersion(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusCreated)
 }
+
+func (h *Handler) ListTemplatesSummary(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+
+	var (
+		channel *shared.Channel
+		tplType *shared.TemplateType
+	)
+
+	if c := q.Get("channel"); c != "" {
+		ch := shared.Channel(c)
+		channel = &ch
+	}
+
+	if t := q.Get("type"); t != "" {
+		tt := shared.TemplateType(t)
+		tplType = &tt
+	}
+
+	result, err := h.service.ListTemplatesWithActiveVersion(
+		r.Context(),
+		channel,
+		tplType,
+	)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(result)
+}

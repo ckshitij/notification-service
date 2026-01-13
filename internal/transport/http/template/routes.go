@@ -12,6 +12,8 @@ func (h *Handler) Routes() chi.Router {
 	// Collection-level operations
 	r.Post("/", h.CreateTemplate)
 
+	r.Get("/summary", h.ListTemplatesSummary)
+
 	// Resource-level operations
 	r.Route("/{channel}/{name}", func(r chi.Router) {
 

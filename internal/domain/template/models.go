@@ -36,3 +36,23 @@ type TemplateVersion struct {
 
 	CreatedAt time.Time
 }
+
+type ListTemplatesFilter struct {
+	Channel *shared.Channel
+	Type    *shared.TemplateType
+}
+
+type TemplateWithActiveVersion struct {
+	ID            int64
+	Name          string
+	Description   string
+	Channel       shared.Channel
+	Type          shared.TemplateType
+	ActiveVersion int
+
+	Subject *string
+	Body    string
+
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}

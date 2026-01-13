@@ -14,4 +14,5 @@ type Repository interface {
 	GetActiveVersion(ctx context.Context, templateID int64) (*TemplateVersion, error)
 	GetVersion(ctx context.Context, templateID int64, version int) (*TemplateVersion, error)
 	ListVersions(ctx context.Context, templateID int64) ([]TemplateVersion, error)
+	ListTemplatesWithActiveVersion(ctx context.Context, filter ListTemplatesFilter) ([]TemplateWithActiveVersion, error)
 }

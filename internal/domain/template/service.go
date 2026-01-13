@@ -113,3 +113,17 @@ func (s *Service) ListVersionsByName(
 
 	return s.repo.ListVersions(ctx, tpl.ID)
 }
+
+func (s *Service) ListTemplatesWithActiveVersion(
+	ctx context.Context,
+	channel *shared.Channel,
+	tplType *shared.TemplateType,
+) ([]TemplateWithActiveVersion, error) {
+
+	filter := ListTemplatesFilter{
+		Channel: channel,
+		Type:    tplType,
+	}
+
+	return s.repo.ListTemplatesWithActiveVersion(ctx, filter)
+}
