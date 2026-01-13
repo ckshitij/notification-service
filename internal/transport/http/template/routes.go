@@ -1,7 +1,7 @@
 package template
 
 import (
-	db "github.com/ckshitij/notification-srv/internal/db/mysql"
+	"github.com/ckshitij/notification-srv/internal/db"
 	"github.com/ckshitij/notification-srv/internal/domain/template"
 	"github.com/go-chi/chi/v5"
 )

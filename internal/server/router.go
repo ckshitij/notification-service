@@ -3,7 +3,7 @@ package server
 import (
 	"net/http"
 
-	db "github.com/ckshitij/notification-srv/internal/db/mysql"
+	"github.com/ckshitij/notification-srv/internal/db"
 	"github.com/ckshitij/notification-srv/internal/logger"
 	"github.com/ckshitij/notification-srv/internal/metrics"
 	"github.com/ckshitij/notification-srv/internal/transport/http/template"

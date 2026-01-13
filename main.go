@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/ckshitij/notification-srv/internal/config"
-	db "github.com/ckshitij/notification-srv/internal/db/mysql"
+	"github.com/ckshitij/notification-srv/internal/db"
 	"github.com/ckshitij/notification-srv/internal/logger"
 	"github.com/ckshitij/notification-srv/internal/server"
 )
