@@ -1,4 +1,6 @@
-package template
+package repository
+
+import "github.com/ckshitij/notify-srv/internal/template"
 
 const (
 	CreateTemplateQuery = `
@@ -71,7 +73,7 @@ const (
 	`
 )
 
-func GetAllTemplatesQuery(filter ListTemplatesFilter) (string, []any) {
+func GetAllTemplatesQuery(filter template.ListTemplatesFilter) (string, []any) {
 	query := `
 		SELECT
 			t.id,

@@ -1,6 +1,6 @@
 package template
 
-import "github.com/ckshitij/notification-srv/internal/domain/shared"
+import "github.com/ckshitij/notify-srv/internal/shared"
 
 type CreateTemplateRequest struct {
 	Name        string         `json:"name"`

@@ -4,16 +4,15 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/ckshitij/notification-srv/internal/domain/shared"
-	"github.com/ckshitij/notification-srv/internal/domain/template"
+	"github.com/ckshitij/notify-srv/internal/shared"
 	"github.com/go-chi/chi/v5"
 )
 
 type Handler struct {
-	service *template.Service
+	service *Service
 }
 
-func NewHandler(s *template.Service) *Handler {
+func NewHandler(s *Service) *Handler {
 	return &Handler{service: s}
 }
 
@@ -25,7 +24,7 @@ func (h *Handler) CreateTemplate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tpl := template.Template{
+	tpl := Template{
 		Name:        req.Name,
 		Description: req.Description,
 		Channel:     req.Channel,

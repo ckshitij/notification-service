@@ -10,7 +10,7 @@ mysql:
   database: notification
   username: notif_app
   password: Notif@1234!
-  params: "parseTime=true&charset=utf8mb4&loc=UTC"
+  params: "multiStatements=true&parseTime=true&charset=utf8mb4&loc=UTC"
 
   max_open_conns: 25
   max_idle_conns: 10

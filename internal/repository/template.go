@@ -1,23 +1,24 @@
-package template
+package repository
 
 import (
 	"context"
 	"database/sql"
 
-	"github.com/ckshitij/notification-srv/internal/domain/shared"
+	"github.com/ckshitij/notify-srv/internal/shared"
+	"github.com/ckshitij/notify-srv/internal/template"
 )
 
-type MySQLRepository struct {
+type TemplateRepository struct {
 	db *sql.DB
 }
 
-func NewMySQLRepository(db *sql.DB) Repository {
-	return &MySQLRepository{db: db}
+func NewTemplateRepository(db *sql.DB) *TemplateRepository {
+	return &TemplateRepository{db: db}
 }
 
-func (r *MySQLRepository) CreateTemplate(
+func (r *TemplateRepository) CreateTemplate(
 	ctx context.Context,
-	tpl Template,
+	tpl template.Template,
 ) error {
 
 	_, err := r.db.ExecContext(
@@ -34,11 +35,11 @@ func (r *MySQLRepository) CreateTemplate(
 	return err
 }
 
-func (r *MySQLRepository) GetTemplate(ctx context.Context, name string, tplType shared.TemplateType, channel shared.Channel) (*Template, error) {
+func (r *TemplateRepository) GetTemplate(ctx context.Context, name string, tplType shared.TemplateType, channel shared.Channel) (*template.Template, error) {
 
 	row := r.db.QueryRowContext(ctx, GetTemplateQuery, name, tplType, channel)
 
-	var tpl Template
+	var tpl template.Template
 	err := row.Scan(
 		&tpl.ID,
 		&tpl.Name,
@@ -63,9 +64,9 @@ func (r *MySQLRepository) GetTemplate(ctx context.Context, name string, tplType 
 	return &tpl, nil
 }
 
-func (r *MySQLRepository) CreateVersion(
+func (r *TemplateRepository) CreateVersion(
 	ctx context.Context,
-	version TemplateVersion,
+	version template.TemplateVersion,
 ) error {
 
 	tx, err := r.db.BeginTx(ctx, nil)
@@ -119,14 +120,14 @@ func (r *MySQLRepository) CreateVersion(
 	return tx.Commit()
 }
 
-func (r *MySQLRepository) GetActiveVersion(
+func (r *TemplateRepository) GetActiveVersion(
 	ctx context.Context,
 	templateID int64,
-) (*TemplateVersion, error) {
+) (*template.TemplateVersion, error) {
 
 	row := r.db.QueryRowContext(ctx, GetActiveVersionQuery, templateID)
 
-	var v TemplateVersion
+	var v template.TemplateVersion
 	err := row.Scan(
 		&v.ID,
 		&v.TemplateID,
@@ -147,15 +148,15 @@ func (r *MySQLRepository) GetActiveVersion(
 	return &v, nil
 }
 
-func (r *MySQLRepository) GetVersion(
+func (r *TemplateRepository) GetVersion(
 	ctx context.Context,
 	templateID int64,
 	version int,
-) (*TemplateVersion, error) {
+) (*template.TemplateVersion, error) {
 
 	row := r.db.QueryRowContext(ctx, GetActiveVersionQuery, templateID, version)
 
-	var v TemplateVersion
+	var v template.TemplateVersion
 	err := row.Scan(
 		&v.ID,
 		&v.TemplateID,
@@ -176,17 +177,17 @@ func (r *MySQLRepository) GetVersion(
 	return &v, nil
 }
 
-func (r *MySQLRepository) ListVersions(ctx context.Context, templateID int64) ([]TemplateVersion, error) {
+func (r *TemplateRepository) ListVersions(ctx context.Context, templateID int64) ([]template.TemplateVersion, error) {
 	rows, err := r.db.QueryContext(ctx, ListVersionsQuery, templateID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var versions []TemplateVersion
+	var versions []template.TemplateVersion
 
 	for rows.Next() {
-		var v TemplateVersion
+		var v template.TemplateVersion
 		if err := rows.Scan(
 			&v.ID,
 			&v.TemplateID,
@@ -204,7 +205,7 @@ func (r *MySQLRepository) ListVersions(ctx context.Context, templateID int64) ([
 	return versions, nil
 }
 
-func (r *MySQLRepository) ListTemplatesWithActiveVersion(ctx context.Context, filter ListTemplatesFilter) ([]TemplateWithActiveVersion, error) {
+func (r *TemplateRepository) ListTemplatesWithActiveVersion(ctx context.Context, filter template.ListTemplatesFilter) ([]template.TemplateWithActiveVersion, error) {
 
 	query, args := GetAllTemplatesQuery(filter)
 	rows, err := r.db.QueryContext(ctx, query, args...)
@@ -213,10 +214,10 @@ func (r *MySQLRepository) ListTemplatesWithActiveVersion(ctx context.Context, fi
 	}
 	defer rows.Close()
 
-	var out []TemplateWithActiveVersion
+	var out []template.TemplateWithActiveVersion
 
 	for rows.Next() {
-		var t TemplateWithActiveVersion
+		var t template.TemplateWithActiveVersion
 		if err := rows.Scan(
 			&t.ID,
 			&t.Name,

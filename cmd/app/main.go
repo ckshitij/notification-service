@@ -9,10 +9,12 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ckshitij/notification-srv/internal/config"
-	"github.com/ckshitij/notification-srv/internal/db"
-	"github.com/ckshitij/notification-srv/internal/logger"
-	"github.com/ckshitij/notification-srv/internal/server"
+	"github.com/ckshitij/notify-srv/internal/config"
+	"github.com/ckshitij/notify-srv/internal/logger"
+	"github.com/ckshitij/notify-srv/internal/repository"
+	"github.com/ckshitij/notify-srv/internal/repository/mysql"
+	"github.com/ckshitij/notify-srv/internal/server"
+	"github.com/ckshitij/notify-srv/internal/template"
 )
 
 func main() {
@@ -28,13 +30,16 @@ func main() {
 	}
 
 	ctx := context.Background()
-	database, err := db.New(cfg.MySQL)
+	database, err := mysql.New(cfg.MySQL)
 	if err != nil {
 		log.Fatal(ctx, "failed to connect to mysql", logger.Error(err))
 	}
 	defer database.Close()
 
-	router := server.NewRouter(log, database)
+	moduleRoutes := map[string]http.Handler{
+		"/v1/templates": template.NewTemplateRoutes(repository.NewTemplateRepository(database.Conn())),
+	}
+	router := server.NewRouter(log, database, moduleRoutes)
 
 	addr := ":" + fmt.Sprint(cfg.App.Port)
 	srv := server.New(addr, log, router)

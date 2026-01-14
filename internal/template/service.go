@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/ckshitij/notification-srv/internal/domain/shared"
+	"github.com/ckshitij/notify-srv/internal/shared"
 )
 
 type Service struct {

@@ -1,11 +1,11 @@
-package db
+package mysql
 
 import (
 	"context"
 	"database/sql"
 	"time"
 
-	"github.com/ckshitij/notification-srv/internal/config"
+	"github.com/ckshitij/notify-srv/internal/config"
 	_ "github.com/go-sql-driver/mysql"
 )
 

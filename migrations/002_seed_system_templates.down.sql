@@ -1,5 +1,3 @@
-use notification;
-
 DELETE tv FROM template_versions tv
 JOIN templates t ON tv.template_id = t.id
 WHERE t.type = 'system'

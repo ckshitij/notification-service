@@ -3,7 +3,7 @@ package template
 import (
 	"context"
 
-	"github.com/ckshitij/notification-srv/internal/domain/shared"
+	"github.com/ckshitij/notify-srv/internal/shared"
 )
 
 type Repository interface {

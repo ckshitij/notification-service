@@ -3,7 +3,7 @@ package server
 import (
 	"net/http"
 
-	"github.com/ckshitij/notification-srv/internal/db"
+	"github.com/ckshitij/notify-srv/internal/repository/mysql"
 )
 
 func LivenessHandler(w http.ResponseWriter, _ *http.Request) {
@@ -11,7 +11,7 @@ func LivenessHandler(w http.ResponseWriter, _ *http.Request) {
 	w.Write([]byte("ok"))
 }
 
-func ReadinessHandler(database *db.DB) http.HandlerFunc {
+func ReadinessHandler(database *mysql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := database.Health(r.Context()); err != nil {
 			http.Error(w, "db not ready", http.StatusServiceUnavailable)

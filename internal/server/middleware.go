@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/ckshitij/notification-srv/internal/logger"
+	"github.com/ckshitij/notify-srv/internal/logger"
 	"github.com/google/uuid"
 )
 

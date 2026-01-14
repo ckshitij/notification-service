@@ -3,7 +3,7 @@ package template
 import (
 	"time"
 
-	"github.com/ckshitij/notification-srv/internal/domain/shared"
+	"github.com/ckshitij/notify-srv/internal/shared"
 )
 
 type Template struct {

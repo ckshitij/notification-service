@@ -1,5 +1,3 @@
-use notification;
-
 INSERT INTO templates (
   name,
   description,

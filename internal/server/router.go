@@ -3,10 +3,9 @@ package server
 import (
 	"net/http"
 
-	"github.com/ckshitij/notification-srv/internal/db"
-	"github.com/ckshitij/notification-srv/internal/logger"
-	"github.com/ckshitij/notification-srv/internal/metrics"
-	"github.com/ckshitij/notification-srv/internal/transport/http/template"
+	"github.com/ckshitij/notify-srv/internal/logger"
+	"github.com/ckshitij/notify-srv/internal/metrics"
+	"github.com/ckshitij/notify-srv/internal/repository/mysql"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	httpSwagger "github.com/swaggo/http-swagger"
@@ -17,7 +16,7 @@ const (
 	InternalPath = "/internal"
 )
 
-func NewRouter(log logger.Logger, database *db.DB) http.Handler {
+func NewRouter(log logger.Logger, database *mysql.DB, modRoutes map[string]http.Handler) http.Handler {
 	r := chi.NewRouter()
 
 	// Global middleware
@@ -28,7 +27,9 @@ func NewRouter(log logger.Logger, database *db.DB) http.Handler {
 
 	// Public APIs
 	r.Route(BasePath, func(r chi.Router) {
-		r.Mount("/v1/templates", template.NewTemplateRoutes(database))
+		for pathStr, routes := range modRoutes {
+			r.Mount(pathStr, routes)
+		}
 	})
 
 	// Swagger UI
@@ -37,7 +38,7 @@ func NewRouter(log logger.Logger, database *db.DB) http.Handler {
 	))
 
 	r.Get("/docs", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "./swagger/swagger.yaml")
+		http.ServeFile(w, r, "./api/openapi.yaml")
 	})
 
 	// Internal / infra APIs

@@ -1,12 +1,12 @@
 package template
 
 import (
-	"github.com/ckshitij/notification-srv/internal/db"
-	"github.com/ckshitij/notification-srv/internal/domain/template"
+	"net/http"
+
 	"github.com/go-chi/chi/v5"
 )
 
-func (h *Handler) Routes() chi.Router {
+func (h *Handler) Routes() http.Handler {
 	r := chi.NewRouter()
 
 	// Collection-level operations
@@ -30,9 +30,8 @@ func (h *Handler) Routes() chi.Router {
 	return r
 }
 
-func NewTemplateRoutes(database *db.DB) chi.Router {
-	repo := template.NewMySQLRepository(database.Conn())
-	renderer := template.NewGoTemplateRenderer()
-	service := template.NewService(repo, renderer)
+func NewTemplateRoutes(repo Repository) http.Handler {
+	renderer := NewGoTemplateRenderer()
+	service := NewService(repo, renderer)
 	return NewHandler(service).Routes()
 }
