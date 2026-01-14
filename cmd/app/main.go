@@ -12,6 +12,8 @@ import (
 
 	"github.com/ckshitij/notify-srv/internal/config"
 	"github.com/ckshitij/notify-srv/internal/logger"
+	"github.com/ckshitij/notify-srv/internal/notification"
+	"github.com/ckshitij/notify-srv/internal/renderer"
 	"github.com/ckshitij/notify-srv/internal/repository"
 	"github.com/ckshitij/notify-srv/internal/repository/mysql"
 	"github.com/ckshitij/notify-srv/internal/server"
@@ -41,8 +43,20 @@ func main() {
 	}
 	defer database.Close()
 
+	templateRepo := repository.NewTemplateRepository(database.Conn())
+	notificationRepo := repository.NewNotificationRepository(database.Conn())
+	renderer := renderer.NewGoTemplateRenderer()
+
+	notificationService := notification.NewService(
+		notificationRepo,
+		renderer,
+		nil,
+		templateRepo,
+	)
+
 	moduleRoutes := map[string]http.Handler{
-		"/v1/templates": template.NewTemplateRoutes(repository.NewTemplateRepository(database.Conn())),
+		"/v1/templates":     template.NewTemplateRoutes(templateRepo, renderer),
+		"/v1/notifications": notification.NewNotificationRoutes(notificationService),
 	}
 	router := server.NewRouter(log, database, *swaggerFilePath, moduleRoutes)
 

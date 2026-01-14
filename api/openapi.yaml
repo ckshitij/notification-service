@@ -9,10 +9,110 @@ servers:
   - url: http://localhost:8098/notify-srv/api/v1
 
 tags:
+  - name: Notifications
+    description: Notification sending and scheduling
+
   - name: Templates
     description: Template management and rendering
 
+
 paths:
+
+  /notifications:
+    post:
+      tags: [Notifications]
+      summary: Send notification immediately
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendNotificationRequest"
+      responses:
+        "202":
+          description: Notification accepted for sending
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationResponse"
+        "400":
+          description: Invalid request
+        "500":
+          description: Something went wrong on server
+    get:
+      tags: [Notifications]
+      summary: List notifications with optional filters
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [pending, sent, failed]
+        - name: channel
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [email, slack, in_app]
+      responses:
+        "200":
+          description: List of notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NotificationFullResponse"
+        "500":
+          description: Something went wrong on server
+
+  /notifications/schedule:
+    post:
+      tags: [Notifications]
+      summary: Schedule notification for later delivery
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScheduleNotificationRequest"
+      responses:
+        "202":
+          description: Notification scheduled successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationResponse"
+        "400":
+          description: Invalid request
+        "500":
+          description: Something went wrong on server
+
+  /notifications/{id}:
+    get:
+      tags: [Notifications]
+      summary: Get notification by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Notification details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationFullResponse"
+        "400":
+          description: Invalid notification ID
+        "404":
+          description: Notification not found
+        "500":
+          description: Something went wrong on server
 
   /templates:
     post:
@@ -29,6 +129,8 @@ paths:
           description: Template created successfully
         "400":
           description: Invalid request
+        "500":
+          description: Something went wrong on server
 
   /templates/{channel}/{name}/versions:
     post:
@@ -48,6 +150,8 @@ paths:
           description: Version created
         "400":
           description: Invalid request
+        "500":
+          description: Something went wrong on server
 
     get:
       tags: [Templates]
@@ -64,6 +168,10 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/TemplateVersion"
+        "400":
+          description: Invalid request
+        "500":
+          description: Something went wrong on server
 
   /templates/{channel}/{name}:
     post:
@@ -85,6 +193,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RenderedTemplate"
+        "400":
+          description: Invalid request
+        "500":
+          description: Something went wrong on server
 
   /templates/summary:
     get:
@@ -115,7 +227,8 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/TemplateSummary"
-
+        "500":
+          description: Something went wrong on server
 
 components:
 
@@ -234,4 +347,100 @@ components:
           type: string
           format: date-time
           example: "2026-01-14T10:15:02Z"
+
+    SendNotificationRequest:
+      type: object
+      required:
+        - channel
+        - template_version_id
+        - recipient
+        - payload
+      properties:
+        channel:
+          type: string
+          enum: [email, slack, in_app]
+        template_version_id:
+          type: integer
+          format: int64
+          example: 12
+        recipient:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            email: user@example.com
+        payload:
+          type: object
+          additionalProperties: true
+          example:
+            UserName: Kshitij
+
+    ScheduleNotificationRequest:
+      allOf:
+        - $ref: "#/components/schemas/SendNotificationRequest"
+        - type: object
+          required:
+            - scheduled_at
+          properties:
+            scheduled_at:
+              type: string
+              format: date-time
+              example: "2026-01-15T10:00:00Z"
+
+    NotificationResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 101
+        status:
+          type: string
+          example: scheduled
+      
+    NotificationFullResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 101
+        channel:
+          type: string
+          enum: [email, slack, in_app]
+        template_version_id:
+          type: integer
+          format: int64
+          example: 12
+        recipient:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            email:
+        payload:
+          type: object
+          additionalProperties: true
+          example:
+            UserName: Kshitij
+        status:
+          type: string
+          example: sent
+        scheduled_at:
+          type: string
+          format: date-time
+          example: "2026-01-15T10:00:00Z"
+        sent_at:
+          type: string
+          format: date-time
+          example: "2026-01-15T10:05:00Z"
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-01-14T10:12:45Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2026-01-14T10:15:02Z"
+
 

@@ -1,12 +1,34 @@
 package repository
 
-import "github.com/ckshitij/notify-srv/internal/template"
+import (
+	"strings"
+
+	"github.com/ckshitij/notify-srv/internal/notification"
+	"github.com/ckshitij/notify-srv/internal/template"
+)
 
 const (
 	CreateTemplateQuery = `
 		INSERT INTO templates
 			(name, description, channel, type, created_by, updated_by)
 		VALUES (?, ?, ?, ?, ?, ?)
+	`
+
+	CreateNotificaionQuery = `
+		INSERT INTO notifications
+		(channel, template_version_id, recipient, payload, status, scheduled_at)
+		VALUES (?, ?, ?, ?, ?, ?)
+	`
+
+	GetNotificationByIDQuery = `
+		SELECT
+			id, channel, template_version_id,
+			recipient, payload, status,
+			scheduled_at, sent_at,
+			created_at, updated_at
+		FROM notifications
+		WHERE id = ?
+		LIMIT 1
 	`
 
 	GetTemplateQuery = `
@@ -73,7 +95,7 @@ const (
 	`
 )
 
-func GetAllTemplatesQuery(filter template.ListTemplatesFilter) (string, []any) {
+func buildGetAllTemplatesQuery(filter template.ListTemplatesFilter) (string, []any) {
 	query := `
 		SELECT
 			t.id,
@@ -106,6 +128,27 @@ func GetAllTemplatesQuery(filter template.ListTemplatesFilter) (string, []any) {
 	}
 
 	query += " ORDER BY t.created_at DESC"
+
+	return query, args
+}
+
+func buildListNotificationsQuery(filter notification.NotificationFilter) (string, []any) {
+	query := `SELECT id, channel, template_version_id, recipient, payload, status, scheduled_at, sent_at, created_at, updated_at FROM notifications`
+	args := []any{}
+	conditions := []string{}
+
+	if filter.Channel != nil {
+		conditions = append(conditions, "channel = ?")
+		args = append(args, *filter.Channel)
+	}
+	if filter.Status != nil {
+		conditions = append(conditions, "status = ?")
+		args = append(args, *filter.Status)
+	}
+
+	if len(conditions) > 0 {
+		query += " WHERE " + strings.Join(conditions, " AND ")
+	}
 
 	return query, args
 }

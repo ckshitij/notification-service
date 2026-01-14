@@ -117,7 +117,7 @@ func (h *Handler) AddVersion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
+	shared.WriteJSON(w, http.StatusOK, nil)
 }
 
 func (h *Handler) ListTemplatesSummary(w http.ResponseWriter, r *http.Request) {
@@ -148,6 +148,5 @@ func (h *Handler) ListTemplatesSummary(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(result)
+	shared.WriteJSON(w, http.StatusOK, result)
 }

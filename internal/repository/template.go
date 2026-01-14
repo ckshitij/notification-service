@@ -207,7 +207,7 @@ func (r *TemplateRepository) ListVersions(ctx context.Context, templateID int64)
 
 func (r *TemplateRepository) ListTemplatesWithActiveVersion(ctx context.Context, filter template.ListTemplatesFilter) ([]template.TemplateWithActiveVersion, error) {
 
-	query, args := GetAllTemplatesQuery(filter)
+	query, args := buildGetAllTemplatesQuery(filter)
 	rows, err := r.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err

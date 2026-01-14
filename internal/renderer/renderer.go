@@ -1,4 +1,4 @@
-package template
+package renderer
 
 import (
 	"bytes"
@@ -12,7 +12,7 @@ type RenderedTemplate struct {
 }
 
 type Renderer interface {
-	Render(tpl TemplateVersion, data map[string]any) (RenderedTemplate, error)
+	Render(subject, body string, data map[string]any) (RenderedTemplate, error)
 }
 
 type GoTemplateRenderer struct {
@@ -22,13 +22,13 @@ func NewGoTemplateRenderer() Renderer {
 	return &GoTemplateRenderer{}
 }
 
-func (r *GoTemplateRenderer) Render(tpl TemplateVersion, data map[string]any) (RenderedTemplate, error) {
+func (r *GoTemplateRenderer) Render(subject, body string, data map[string]any) (RenderedTemplate, error) {
 
 	var result RenderedTemplate
 
 	// Render subject (if present)
-	if tpl.Subject != "" {
-		subject, err := renderString(tpl.Subject, data)
+	if subject != "" {
+		subject, err := renderString(subject, data)
 		if err != nil {
 			return result, fmt.Errorf("render subject: %w", err)
 		}
@@ -36,7 +36,7 @@ func (r *GoTemplateRenderer) Render(tpl TemplateVersion, data map[string]any) (R
 	}
 
 	// Render body (required)
-	body, err := renderString(tpl.Body, data)
+	body, err := renderString(body, data)
 	if err != nil {
 		return result, fmt.Errorf("render body: %w", err)
 	}

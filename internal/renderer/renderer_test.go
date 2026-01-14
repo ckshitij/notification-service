@@ -1,4 +1,4 @@
-package template
+package renderer
 
 import (
 	"testing"
@@ -9,12 +9,10 @@ import (
 func TestRenderTemplate(t *testing.T) {
 	r := NewGoTemplateRenderer()
 
-	tpl := TemplateVersion{
-		Subject: "Hello {{.Name}}",
-		Body:    "Welcome to {{.App}}",
-	}
+	var subject = "Hello {{.Name}}"
+	var body = "Welcome to {{.App}}"
 
-	out, err := r.Render(tpl, map[string]any{
+	out, err := r.Render(subject, body, map[string]any{
 		"Name": "User",
 		"App":  "NotifyX",
 	})

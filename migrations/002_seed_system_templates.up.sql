@@ -1,4 +1,4 @@
-INSERT INTO templates (
+INSERT IGNORE INTO templates (
   name,
   description,
   channel,
@@ -17,7 +17,7 @@ VALUES (
   0
 );
 
-INSERT INTO template_versions (
+INSERT ignore INTO template_versions (
   template_id,
   version,
   subject,
@@ -33,7 +33,7 @@ VALUES (
 );
 
 
-INSERT INTO templates (
+INSERT ignore INTO templates (
   name,
   description,
   channel,
@@ -52,7 +52,7 @@ VALUES (
   0
 );
 
-INSERT INTO template_versions (
+INSERT ignore INTO template_versions (
   template_id,
   version,
   body,

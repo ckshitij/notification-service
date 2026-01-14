@@ -3,6 +3,7 @@ package template
 import (
 	"net/http"
 
+	"github.com/ckshitij/notify-srv/internal/renderer"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -30,8 +31,7 @@ func (h *Handler) Routes() http.Handler {
 	return r
 }
 
-func NewTemplateRoutes(repo Repository) http.Handler {
-	renderer := NewGoTemplateRenderer()
+func NewTemplateRoutes(repo Repository, renderer renderer.Renderer) http.Handler {
 	service := NewService(repo, renderer)
 	return NewHandler(service).Routes()
 }

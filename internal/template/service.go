@@ -4,15 +4,16 @@ import (
 	"context"
 	"errors"
 
+	"github.com/ckshitij/notify-srv/internal/renderer"
 	"github.com/ckshitij/notify-srv/internal/shared"
 )
 
 type Service struct {
 	repo     Repository
-	renderer Renderer
+	renderer renderer.Renderer
 }
 
-func NewService(repo Repository, renderer Renderer) *Service {
+func NewService(repo Repository, renderer renderer.Renderer) *Service {
 	return &Service{
 		repo:     repo,
 		renderer: renderer,
@@ -77,7 +78,7 @@ func (s *Service) AddVersionByName(
 	return s.repo.CreateVersion(ctx, version)
 }
 
-func (s *Service) Render(ctx context.Context, templateName string, tplType shared.TemplateType, channel shared.Channel, data map[string]any) (*RenderedTemplate, error) {
+func (s *Service) Render(ctx context.Context, templateName string, tplType shared.TemplateType, channel shared.Channel, data map[string]any) (*renderer.RenderedTemplate, error) {
 
 	tpl, err := s.repo.GetTemplate(ctx, templateName, tplType, channel)
 	if err != nil {
@@ -89,7 +90,7 @@ func (s *Service) Render(ctx context.Context, templateName string, tplType share
 		return nil, err
 	}
 
-	rendered, err := s.renderer.Render(*version, data)
+	rendered, err := s.renderer.Render(version.Subject, version.Subject, data)
 	if err != nil {
 		return nil, err
 	}

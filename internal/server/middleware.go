@@ -2,6 +2,7 @@ package server
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/ckshitij/notify-srv/internal/logger"
@@ -18,14 +19,36 @@ func AccessLogMiddleware(log logger.Logger) func(http.Handler) http.Handler {
 
 			duration := time.Since(start)
 
-			log.Info(r.Context(), "http request completed",
+			fields := []logger.Field{
 				logger.String("method", r.Method),
 				logger.String("path", r.URL.Path),
 				logger.Int("status", rw.status),
 				logger.Int("bytes", rw.bytes),
 				logger.Int("duration_micro_sec", int(duration.Microseconds())),
 				logger.String("remote_ip", r.RemoteAddr),
-			)
+			}
+
+			// Internal endpoints: default to Debug, but still respect errors
+			if strings.Contains(r.URL.Path, "/internal/") {
+				if rw.status >= http.StatusInternalServerError {
+					log.Error(r.Context(), "internal request failed", fields...)
+				} else {
+					log.Debug(r.Context(), "internal request completed", fields...)
+				}
+				return
+			}
+
+			// External APIs
+			switch {
+			case rw.status >= http.StatusInternalServerError:
+				log.Error(r.Context(), "http request failed", fields...)
+
+			case rw.status >= http.StatusBadRequest:
+				log.Warn(r.Context(), "http request client error", fields...)
+
+			default:
+				log.Info(r.Context(), "http request completed", fields...)
+			}
 		})
 	}
 }
