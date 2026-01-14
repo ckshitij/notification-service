@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"net/http"
 	"os"
@@ -19,7 +20,11 @@ import (
 
 func main() {
 
-	cfg, err := config.Load("./config/config.yml")
+	configPath := flag.String("config", "./config/config.yml", "pass the config file path")
+	swaggerFilePath := flag.String("swagger", "./api/openapi.yaml", "path to openapi spec file")
+	flag.Parse()
+
+	cfg, err := config.Load(*configPath)
 	if err != nil {
 		panic(err)
 	}
@@ -39,7 +44,7 @@ func main() {
 	moduleRoutes := map[string]http.Handler{
 		"/v1/templates": template.NewTemplateRoutes(repository.NewTemplateRepository(database.Conn())),
 	}
-	router := server.NewRouter(log, database, moduleRoutes)
+	router := server.NewRouter(log, database, *swaggerFilePath, moduleRoutes)
 
 	addr := ":" + fmt.Sprint(cfg.App.Port)
 	srv := server.New(addr, log, router)

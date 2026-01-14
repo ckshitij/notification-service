@@ -16,7 +16,7 @@ const (
 	InternalPath = "/internal"
 )
 
-func NewRouter(log logger.Logger, database *mysql.DB, modRoutes map[string]http.Handler) http.Handler {
+func NewRouter(log logger.Logger, database *mysql.DB, openAPIPath string, modRoutes map[string]http.Handler) http.Handler {
 	r := chi.NewRouter()
 
 	// Global middleware
@@ -38,7 +38,7 @@ func NewRouter(log logger.Logger, database *mysql.DB, modRoutes map[string]http.
 	))
 
 	r.Get("/docs", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "./api/openapi.yaml")
+		http.ServeFile(w, r, openAPIPath)
 	})
 
 	// Internal / infra APIs
