@@ -15,6 +15,7 @@ import (
 	"github.com/ckshitij/notify-srv/internal/pkg/notification"
 	notfysql "github.com/ckshitij/notify-srv/internal/pkg/notification/mysql"
 	tmplsql "github.com/ckshitij/notify-srv/internal/pkg/template/mysql"
+	"github.com/redis/go-redis/v9"
 
 	"github.com/ckshitij/notify-srv/internal/mysql"
 	"github.com/ckshitij/notify-srv/internal/pkg/renderer"
@@ -22,11 +23,12 @@ import (
 	"github.com/ckshitij/notify-srv/internal/pkg/senders/inapp"
 	"github.com/ckshitij/notify-srv/internal/pkg/senders/slack"
 	"github.com/ckshitij/notify-srv/internal/pkg/template"
+	notifyredis "github.com/ckshitij/notify-srv/internal/redis"
 	"github.com/ckshitij/notify-srv/internal/server"
 	"github.com/ckshitij/notify-srv/internal/shared"
 )
 
-func processModules(ctx context.Context, database *mysql.DB, cfg *config.Config, log logger.Logger) map[string]http.Handler {
+func processModules(ctx context.Context, database *mysql.DB, rdb *redis.Client, cfg *config.Config, log logger.Logger) map[string]http.Handler {
 	senders := map[shared.Channel]notification.Sender{
 		shared.ChannelEmail: email.New(
 			cfg.SMTP.Host,
@@ -40,8 +42,10 @@ func processModules(ctx context.Context, database *mysql.DB, cfg *config.Config,
 	}
 
 	renderer := renderer.NewGoTemplateRenderer()
-	templateRepo := tmplsql.NewTemplateRepository(database, log)
+	templateRepo := tmplsql.NewTemplateRepository(database, rdb, log)
 	templateService := template.NewTemplateService(templateRepo, renderer)
+
+	templateRepo.CacheReloadSystemTemplates(context.Background())
 
 	notificationRepo := notfysql.NewNotificationRepository(database, log)
 	notificationSrv := notification.NewNotificationService(notificationRepo, renderer, senders, templateRepo, log)
@@ -50,8 +54,9 @@ func processModules(ctx context.Context, database *mysql.DB, cfg *config.Config,
 	go scheduler.Run(ctx)
 
 	return map[string]http.Handler{
-		"/v1/templates":     template.NewTemplateRoutes(templateService),
-		"/v1/notifications": notification.NewNotificationRoutes(notificationSrv),
+		"/v1/admin/templates": template.NewAdminTemplateRoutes(templateService),
+		"/v1/templates":       template.NewTemplateRoutes(templateService),
+		"/v1/notifications":   notification.NewNotificationRoutes(notificationSrv),
 	}
 }
 
@@ -78,10 +83,15 @@ func main() {
 	}
 	defer database.Close()
 
+	rdb, err := notifyredis.NewClient(cfg.Redis)
+	if err != nil {
+		log.Fatal(ctx, "failed to connect to redis", logger.Error(err))
+	}
+
 	schedularCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	handlers := processModules(schedularCtx, database, cfg, log)
+	handlers := processModules(schedularCtx, database, rdb, cfg, log)
 	router := server.NewRouter(log, database, *swaggerFilePath, handlers)
 
 	addr := ":" + fmt.Sprint(cfg.App.Port)

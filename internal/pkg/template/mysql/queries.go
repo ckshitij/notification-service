@@ -26,6 +26,24 @@ const (
 		FROM templates
 		WHERE id = ?
 	`
+
+	GetTemplateBySlugQuery = `
+		SELECT
+			id,
+			name,
+			description,
+			channel,
+			type,
+			is_active,
+			IFNULL(subject, ''),
+			body,
+			created_by,
+			updated_by,
+			created_at,
+			updated_at
+		FROM templates
+		WHERE name = ?
+	`
 )
 
 func buildGetAllTemplatesQuery(filter template.TemplateFilter) (string, []any) {
