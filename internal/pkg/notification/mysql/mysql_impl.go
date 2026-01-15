@@ -74,7 +74,6 @@ func (r *NotificationRepository) UpdateStatus(ctx context.Context, id int64, sta
 }
 
 func (r *NotificationRepository) GetByID(ctx context.Context, id int64) (*notification.Notification, error) {
-
 	row := r.db.QueryRowContext(ctx, GetNotificationByIDQuery, id)
 
 	var (
@@ -83,7 +82,7 @@ func (r *NotificationRepository) GetByID(ctx context.Context, id int64) (*notifi
 		payload   []byte
 	)
 
-	if err := row.Scan(
+	err := row.Scan(
 		&n.ID,
 		&n.Channel,
 		&n.TemplateID,
@@ -94,13 +93,25 @@ func (r *NotificationRepository) GetByID(ctx context.Context, id int64) (*notifi
 		&n.SentAt,
 		&n.CreatedAt,
 		&n.UpdatedAt,
-	); err != nil {
-		r.log.Error(ctx, "failed to get notification by id ", logger.Int64("notification_id", id), logger.Error(err))
+	)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			r.log.Info(ctx, "notification not found", logger.Int64("notification_id", id))
+			return nil, shared.ErrRecordNotFound
+		}
+
+		r.log.Error(ctx, "failed to get notification by id", logger.Int64("notification_id", id), logger.Error(err))
 		return nil, err
 	}
 
-	json.Unmarshal(recipient, &n.Recipient)
-	json.Unmarshal(payload, &n.TemplateKeyValue)
+	if err := json.Unmarshal(recipient, &n.Recipient); err != nil {
+		return nil, err
+	}
+
+	if err := json.Unmarshal(payload, &n.TemplateKeyValue); err != nil {
+		return nil, err
+	}
 
 	return &n, nil
 }

@@ -73,7 +73,8 @@ func (r *MySQLTemplate) GetByID(ctx context.Context, templateID int64) (*templat
 	)
 
 	if err == sql.ErrNoRows {
-		return nil, nil
+		r.log.Info(ctx, "notification not found", logger.Int64("templateID", templateID))
+		return nil, shared.ErrRecordNotFound
 	}
 
 	if err != nil {

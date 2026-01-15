@@ -19,7 +19,7 @@ VALUES (
   0
 );
 
-INSERT ignore INTO templates (
+INSERT IGNORE INTO templates (
   name,
   description,
   channel,

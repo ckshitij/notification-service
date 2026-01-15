@@ -58,7 +58,7 @@ func (h *Handler) Schedule(w http.ResponseWriter, r *http.Request) {
 
 	id, err := h.service.Schedule(r.Context(), n, req.ScheduledAt)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), shared.ErrorHttpMapper(err))
 		return
 	}
 
@@ -79,7 +79,7 @@ func (h *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
 
 	notification, err := h.service.GetByID(r.Context(), notificationID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), shared.ErrorHttpMapper(err))
 		return
 	}
 
@@ -102,7 +102,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 
 	notifications, err := h.service.List(r.Context(), filter)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), shared.ErrorHttpMapper(err))
 		return
 	}
 
@@ -120,7 +120,7 @@ func (h *Handler) Process(w http.ResponseWriter, r *http.Request) {
 
 	err = h.service.Process(r.Context(), notificationID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), shared.ErrorHttpMapper(err))
 		return
 	}
 

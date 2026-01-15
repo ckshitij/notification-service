@@ -111,6 +111,8 @@ paths:
           description: Invalid notification ID
         "404":
           description: Notification not found
+        "404":
+          description: record not found for given id
         "500":
           description: Something went wrong on server
     
@@ -230,6 +232,8 @@ paths:
                   $ref: "#/components/schemas/Template"
         "400":
           description: Invalid request
+        "404":
+          description: record not found for given id
         "500":
           description: Something went wrong on server
 
@@ -260,6 +264,8 @@ paths:
                 $ref: "#/components/schemas/Template"
         "400":
           description: Invalid request
+        "404":
+          description: record not found for given id
         "500":
           description: Something went wrong on server
 

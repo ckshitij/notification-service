@@ -1,4 +1,4 @@
-CREATE TABLE in_app_notifications (
+CREATE TABLE IF NOT EXISTS in_app_notifications (
   id BIGINT AUTO_INCREMENT PRIMARY KEY,
   notification_id BIGINT NOT NULL,
   user_id VARCHAR(64) NOT NULL,

@@ -15,6 +15,7 @@ var (
 	ErrDuplicateTemplateRecord    = errors.New("duplicate template record")
 	ErrInvalidRecipient           = errors.New("invalid recipient, please check the format")
 	ErrInvalidTemplateKeyValue    = errors.New("invalid template_key_value, please check the format")
+	ErrRecordNotFound             = errors.New("record not found")
 )
 
 func ErrorHttpMapper(err error) int {
@@ -25,6 +26,8 @@ func ErrorHttpMapper(err error) int {
 		return http.StatusBadRequest
 	case ErrSystemTemplateNotPermitted:
 		return http.StatusForbidden
+	case ErrRecordNotFound:
+		return http.StatusNotFound
 	case ErrDuplicateTemplateRecord:
 		return http.StatusConflict
 	default:

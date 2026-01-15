@@ -74,7 +74,7 @@ The service should now be running and connected to all its dependencies. By defa
 
 Once everything is running, you can access the various components:
 
-- **Notification Service API**: `http://localhost:8000`
+- **Notification Service Swagger UI**: `http://localhost:8098/swagger/index.html`
 - **Kafka UI**: `http://localhost:8081`
 - **Grafana Dashboard**: `http://localhost:3000` (Login: `notif_admin` / `Grafana@123`)
 - **MailHog (Email Viewer)**: `http://localhost:8025`
