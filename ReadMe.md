@@ -1,76 +1,110 @@
-# Notification Service
+# Notification Service (`notify-srv`)
 
-## Template Module
+A robust, scalable, and observable notification service built with Go. It provides a centralized system for managing and sending notifications across multiple channels like Email, Slack, and In-App.
 
-The Template module is responsible for managing notification templates in a safe, versioned, and extensible way.
-It provides APIs to create templates, manage versions, and render templates for different notification channels such as Email, Slack, and In-App.
+## Features
 
-This module is designed to work independently today and can be easily extracted into a separate service in the future.
+- **Multi-Channel Support**: Easily send notifications via Email, Slack, and In-App channels.
+- **Dynamic Templates**: Utilizes Go's templating engine (`text/template`) for dynamic and version-controlled notification content.
+- **RESTful API**: A clean and simple API for managing templates and sending notifications. (See `api/openapi.yaml` for the full specification).
+- **Asynchronous Processing**: Leverages Kafka for queuing and processing notification requests asynchronously, ensuring high throughput and resilience.
+- **Database Migrations**: Manages database schema changes cleanly using a dedicated migrator tool.
+- **Observability**: Exposes application metrics in Prometheus format for easy monitoring and alerting.
+- **Containerized**: Comes with a complete `docker-compose` setup for all dependencies, enabling a one-command local environment startup.
 
-### Core Concepts
-1. Template
-    - A Template represents a notification definition for a specific channel.
-    - Identity
-        - `(name + channel)` like `onboard_user + email`, `onboard_user + slack`
-    - Templates contain metadata only, not message content.
-    - Key fields
-        - `name`
-        - `description`
-        - `channel` **(email / slack / in_app)**
-        - `type` **(system / user)**
-        - `active_version`
-        - `timestamps`
+## Tech Stack
 
-2. Template Version
-    - A TemplateVersion represents the actual message content.
-    - Characteristics
-        - Immutable
-        - Versioned (1, 2, 3, …)
-        - Only one version is active at a time
-        - Linked to a template via template_id
-    - Key fields
-        - `version`
-        - `subject` (optional, email-only)
-        - `body`
-        - `is_active`
-        - `timestamps`
+- **Language**: Go (v1.24)
+- **Framework**: Chi (for routing) & Viper (for configuration)
+- **Database**: MySQL 8.4
+- **Message Broker**: Kafka
+- **Cache**: Redis
+- **Monitoring**: Prometheus & Grafana
+- **Local Email Testing**: MailHog
+- **Containerization**: Docker & Docker Compose
 
-3. Renderer
+## Prerequisites
 
-    - The Renderer converts a template version into final output using runtime data.
-        - Uses **Go** `text/template`
-        - Stateless and pure
-        - Fails fast on missing variables
-        - Produces a channel-agnostic output:
-            - `subject`
-            - `body`
-        - The renderer has no database or network dependencies.
+Before you begin, ensure you have the following installed:
 
-### Template Lifecycle Flow
+- [Go](https://go.dev/doc/install) (version 1.24 or later)
+- [Docker](https://docs.docker.com/get-docker/)
+- [Docker Compose](https://docs.docker.com/compose/install/)
 
-1. Create Template `POST /templates`
-    - Creates a user-defined template
-    - System templates are created only via migrations
-    - Template is created without content
+## Getting Started
 
-2. Add Template Version `POST /templates/{channel}/{name}/versions`
-    - Creates a new immutable version
-    - Automatically increments version number
-    - Deactivates the previous active version
-    - Updates active_version on the template
+Follow these steps to get the notification service running on your local machine.
 
-3. List Versions (Audit & Debug) `GET /templates/{channel}/{name}/versions`
-    - Returns all versions (active + inactive)
-    - Used by admin/UI/debugging tools
-    - Notifications do not call this API
+### 1. Clone the Repository
 
-4. Render Template (Preview / Representation) `POST /templates/{channel}/{name}`
-    - Renders the active version
-    - Accepts runtime data as input
-    - Returns final rendered output
-    - No side effects (does not send notifications)
+```bash
+git clone https://github.com/ckshitij/notify-srv.git
+cd notify-srv
+```
 
-5. List Templates with Active Version (Summary) `GET /templates/summary`
-    - Uses SQL JOIN to fetch templates + active version
-    - Intended for admin/UI/ops use
-    - Returns a read model, not a write model
+### 2. Start Dependencies
+
+All required backing services (MySQL, Kafka, Redis, etc.) are defined in the `docker-compose.yml` file. Start them all in detached mode:
+
+```bash
+docker-compose -f deployments/docker-compose.yml up -d
+```
+
+This will start all services and expose their default ports. You can check the status with `docker-compose -f deployments/docker-compose.yml ps`.
+
+### 3. Run Database Migrations
+
+Once the database container is healthy, run the database migrations to set up the required tables and seed initial data.
+
+```bash
+go run cmd/migrator/main.go
+```
+
+### 4. Run the Application
+
+Finally, start the main notification service application:
+
+```bash
+go run cmd/app/main.go
+```
+
+The service should now be running and connected to all its dependencies. By default, it runs on port `8000`.
+
+### 5. Accessing Services
+
+Once everything is running, you can access the various components:
+
+- **Notification Service API**: `http://localhost:8000`
+- **Kafka UI**: `http://localhost:8081`
+- **Grafana Dashboard**: `http://localhost:3000` (Login: `notif_admin` / `Grafana@123`)
+- **MailHog (Email Viewer)**: `http://localhost:8025`
+- **Prometheus Targets**: `http://localhost:9090`
+
+## API Documentation
+
+The API is documented using the OpenAPI specification. The definition can be found in `api/openapi.yaml`.
+
+## Running Tests
+
+To run the test suite, execute the following command from the project root:
+
+```bash
+go test ./...
+```
+
+## Project Structure
+
+- `api/`: Contains the OpenAPI specification file.
+- `cmd/`: Main application entry points.
+  - `app/`: The main notification service server.
+  - `migrator/`: The database migration tool.
+- `config/`: Contains the application configuration file (`config.yml`).
+- `deployments/`: Docker and `docker-compose` files for local development.
+- `internal/`: All private application logic.
+  - `config/`: Configuration loading logic.
+  - `logger/`: Application logger setup.
+  - `metrics/`: Prometheus metrics setup.
+  - `pkg/`: Core business logic for notifications, templates, and senders.
+  - `server/`: HTTP server setup, routing, and middleware.
+- `migrations/`: SQL migration files (`.up.sql` and `.down.sql`).
+- `static/`: Static assets (if any).
