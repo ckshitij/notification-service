@@ -5,14 +5,15 @@ import (
 	"errors"
 	"time"
 
+	"github.com/ckshitij/notify-srv/internal/logger"
 	"github.com/ckshitij/notify-srv/internal/renderer"
 	"github.com/ckshitij/notify-srv/internal/shared"
 	"github.com/ckshitij/notify-srv/internal/template"
 )
 
 type Service interface {
-	SendNow(ctx context.Context, n *Notification) error
-	Schedule(ctx context.Context, n *Notification, when time.Time) error
+	SendNow(ctx context.Context, n *Notification) (int64, error)
+	Schedule(ctx context.Context, n *Notification, when time.Time) (int64, error)
 	Process(ctx context.Context, notificationID int64) error
 	GetByID(ctx context.Context, notificationID int64) (*Notification, error)
 	List(ctx context.Context, filter NotificationFilter) ([]*Notification, error)
@@ -23,29 +24,40 @@ type serviceImpl struct {
 	renderer     renderer.Renderer
 	senders      map[shared.Channel]Sender
 	templateRepo template.Repository
+	log          logger.Logger
 }
 
-func NewService(
+func New(
 	repo Repository,
 	renderer renderer.Renderer,
 	senders map[shared.Channel]Sender,
 	templateRepo template.Repository,
+	log logger.Logger,
 ) Service {
-	return &serviceImpl{repo, renderer, senders, templateRepo}
+	return &serviceImpl{repo, renderer, senders, templateRepo, log}
 }
 
-func (s *serviceImpl) SendNow(ctx context.Context, n *Notification) error {
+func (s *serviceImpl) SendNow(ctx context.Context, n *Notification) (int64, error) {
 
 	n.Status = StatusPending
 
-	if err := s.repo.Create(ctx, n); err != nil {
-		return err
+	id, err := s.repo.Create(ctx, n)
+	if err != nil {
+		return -1, err
 	}
 
-	return s.Process(ctx, n.ID)
+	go func() {
+		ct := context.Background()
+		err := s.Process(ct, id)
+		if err != nil {
+			s.log.Error(ct, "failed to process", logger.Error(err))
+		}
+	}()
+
+	return id, nil
 }
 
-func (s *serviceImpl) Schedule(ctx context.Context, n *Notification, when time.Time) error {
+func (s *serviceImpl) Schedule(ctx context.Context, n *Notification, when time.Time) (int64, error) {
 
 	n.Status = StatusScheduled
 	n.ScheduledAt = &when
@@ -82,8 +94,13 @@ func (s *serviceImpl) Process(
 		return err
 	}
 
+	s.log.Info(ctx, "received data", logger.Field{
+		Key:   "data",
+		Value: tplVersion,
+	})
+
 	// Render content
-	content, err := s.renderer.Render(tplVersion.Body, tplVersion.Subject, n.Payload)
+	content, err := s.renderer.Render(tplVersion.Body, tplVersion.Subject, n.TemplateKeyValue)
 	if err != nil {
 		s.repo.UpdateStatus(ctx, n.ID, StatusFailed)
 		return err

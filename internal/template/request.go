@@ -14,5 +14,5 @@ type AddVersionRequest struct {
 }
 
 type RenderRequest struct {
-	Data map[string]any `json:"data"`
+	TemplateKeyValue map[string]any `json:"template_key_value"`
 }

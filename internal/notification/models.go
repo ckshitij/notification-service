@@ -24,9 +24,8 @@ const (
 
 type NotificationRecipient struct {
 	Email     *string `json:"email,omitempty"`
-	SlackUser *string `json:"slack_user,omitempty"`
-	SlackChan *string `json:"slack_channel,omitempty"`
-	InAppUser *string `json:"in_app_user,omitempty"`
+	SlackUser *string `json:"slack,omitempty"`
+	InAppUser *string `json:"in_app,omitempty"`
 }
 
 type Notification struct {
@@ -34,7 +33,7 @@ type Notification struct {
 	Channel           shared.Channel        `json:"channel"`
 	TemplateVersionID int64                 `json:"template_version_id"`
 	Recipient         NotificationRecipient `json:"recipient"`
-	Payload           map[string]any        `json:"payload"`
+	TemplateKeyValue  map[string]any        `json:"template_key_value"`
 	Status            NotificationStatus    `json:"status"`
 	ScheduledAt       *time.Time            `json:"scheduled_at,omitempty"`
 	SentAt            *time.Time            `json:"sent_at,omitempty"`
@@ -45,4 +44,23 @@ type Notification struct {
 type NotificationFilter struct {
 	Channel *shared.Channel
 	Status  *NotificationStatus
+}
+
+type SendNowRequest struct {
+	Channel shared.Channel `json:"channel"`
+
+	TemplateVersionID int64 `json:"template_version_id"`
+
+	Recipient        map[string]string `json:"recipient"`
+	TemplateKeyValue map[string]any    `json:"template_key_value"`
+}
+
+type ScheduleRequest struct {
+	SendNowRequest
+	ScheduledAt time.Time `json:"scheduled_at"`
+}
+
+type NotificationResponse struct {
+	ID     int64  `json:"id"`
+	Status string `json:"status"`
 }

@@ -11,7 +11,8 @@ func (h *Handler) Routes() http.Handler {
 
 	r.Post("/", h.SendNow)
 	r.Post("/schedule", h.Schedule)
-	r.Get("/{id}", h.GetByID)
+	r.Get("/{id}/status", h.GetByID)
+	r.Get("/{id}/initiate", h.Process)
 	r.Get("/", h.List)
 
 	return r

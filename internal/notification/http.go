@@ -31,13 +31,14 @@ func (h *Handler) SendNow(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.service.SendNow(r.Context(), n); err != nil {
+	id, err := h.service.SendNow(r.Context(), n)
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	shared.WriteJSON(w, http.StatusAccepted, NotificationResponse{
-		ID:     n.ID,
+		ID:     id,
 		Status: string(n.Status),
 	})
 }
@@ -55,21 +56,22 @@ func (h *Handler) Schedule(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.service.Schedule(
+	id, err := h.service.Schedule(
 		r.Context(),
 		&Notification{
 			Channel:           n.Channel,
 			TemplateVersionID: n.TemplateVersionID,
-			Payload:           n.Payload,
+			TemplateKeyValue:  n.TemplateKeyValue,
 		},
 		req.ScheduledAt,
-	); err != nil {
+	)
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	shared.WriteJSON(w, http.StatusAccepted, NotificationResponse{
-		ID:     n.ID,
+		ID:     id,
 		Status: string(n.Status),
 	})
 }
@@ -83,12 +85,13 @@ func (h *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.service.Process(r.Context(), notificationID); err != nil {
+	notification, err := h.service.GetByID(r.Context(), notificationID)
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	shared.WriteJSON(w, http.StatusOK, notification)
 }
 
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
@@ -114,12 +117,30 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	shared.WriteJSON(w, http.StatusOK, notifications)
 }
 
+func (h *Handler) Process(w http.ResponseWriter, r *http.Request) {
+
+	notificationIDStr := chi.URLParam(r, "id")
+	notificationID, err := strconv.ParseInt(notificationIDStr, 10, 64)
+	if err != nil || notificationID <= 0 {
+		http.Error(w, "invalid notification ID ", http.StatusBadRequest)
+		return
+	}
+
+	err = h.service.Process(r.Context(), notificationID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	shared.WriteJSON(w, http.StatusAccepted, nil)
+}
+
 func mapRequestToNotification(req SendNowRequest) (*Notification, error) {
 
 	n := &Notification{
 		Channel:           shared.Channel(req.Channel),
 		TemplateVersionID: req.TemplateVersionID,
-		Payload:           req.Payload,
+		TemplateKeyValue:  req.TemplateKeyValue,
 	}
 
 	switch req.Channel {
@@ -134,11 +155,8 @@ func mapRequestToNotification(req SendNowRequest) (*Notification, error) {
 		if v := req.Recipient["user"]; v != "" {
 			n.Recipient.SlackUser = &v
 		}
-		if v := req.Recipient["channel"]; v != "" {
-			n.Recipient.SlackChan = &v
-		}
-		if n.Recipient.SlackUser == nil && n.Recipient.SlackChan == nil {
-			return nil, errors.New("slack user or channel required")
+		if n.Recipient.SlackUser == nil {
+			return nil, errors.New("slack user required")
 		}
 
 	case "in_app":

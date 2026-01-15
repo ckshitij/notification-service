@@ -38,17 +38,7 @@ func AccessLogMiddleware(log logger.Logger) func(http.Handler) http.Handler {
 				return
 			}
 
-			// External APIs
-			switch {
-			case rw.status >= http.StatusInternalServerError:
-				log.Error(r.Context(), "http request failed", fields...)
-
-			case rw.status >= http.StatusBadRequest:
-				log.Warn(r.Context(), "http request client error", fields...)
-
-			default:
-				log.Info(r.Context(), "http request completed", fields...)
-			}
+			log.Info(r.Context(), "http request completed", fields...)
 		})
 	}
 }

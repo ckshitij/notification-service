@@ -89,7 +89,7 @@ paths:
         "500":
           description: Something went wrong on server
 
-  /notifications/{id}:
+  /notifications/{id}/status:
     get:
       tags: [Notifications]
       summary: Get notification by ID
@@ -107,6 +107,27 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/NotificationFullResponse"
+        "400":
+          description: Invalid notification ID
+        "404":
+          description: Notification not found
+        "500":
+          description: Something went wrong on server
+    
+  /notifications/{id}/initiate:
+    get:
+      tags: [Notifications]
+      summary: Get notification by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "202":
+          description: Trigger the process
         "400":
           description: Invalid notification ID
         "404":
@@ -173,7 +194,7 @@ paths:
         "500":
           description: Something went wrong on server
 
-  /templates/{channel}/{name}:
+  /templates/{channel}/{name}/render:
     post:
       tags: [Templates]
       summary: Render a template (preview)
@@ -192,7 +213,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/RenderedTemplate"
+                $ref: "#/components/schemas/TemplateSummary"
         "400":
           description: Invalid request
         "500":
@@ -278,24 +299,14 @@ components:
 
     RenderTemplateRequest:
       type: object
-      required: [data]
+      required: [template_key_value]
       properties:
-        data:
+        template_key_value:
           type: object
           additionalProperties: true
           example:
             UserName: Kshitij
             AppName: NotifyX
-
-    RenderedTemplate:
-      type: object
-      properties:
-        subject:
-          type: string
-          example: Welcome Kshitij
-        body:
-          type: string
-          example: Hi Kshitij, welcome to NotifyX!
 
     TemplateVersion:
       type: object
@@ -354,7 +365,7 @@ components:
         - channel
         - template_version_id
         - recipient
-        - payload
+        - template_key_value
       properties:
         channel:
           type: string
@@ -369,7 +380,7 @@ components:
             type: string
           example:
             email: user@example.com
-        payload:
+        template_key_value:
           type: object
           additionalProperties: true
           example:
@@ -418,7 +429,7 @@ components:
             type: string
           example:
             email:
-        payload:
+        template_key_value:
           type: object
           additionalProperties: true
           example:

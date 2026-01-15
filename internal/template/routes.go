@@ -19,7 +19,7 @@ func (h *Handler) Routes() http.Handler {
 	r.Route("/{channel}/{name}", func(r chi.Router) {
 
 		// Render / preview template (representation)
-		r.Post("/", h.Render)
+		r.Post("/render", h.Render)
 
 		// Versions sub-resource
 		r.Route("/versions", func(r chi.Router) {

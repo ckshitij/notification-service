@@ -78,24 +78,26 @@ func (s *Service) AddVersionByName(
 	return s.repo.CreateVersion(ctx, version)
 }
 
-func (s *Service) Render(ctx context.Context, templateName string, tplType shared.TemplateType, channel shared.Channel, data map[string]any) (*renderer.RenderedTemplate, error) {
+func (s *Service) Render(ctx context.Context, templateName string, tplType shared.TemplateType, channel shared.Channel, data map[string]any) (*TemplateVersion, error) {
 
 	tpl, err := s.repo.GetTemplate(ctx, templateName, tplType, channel)
 	if err != nil {
 		return nil, err
 	}
 
-	version, err := s.repo.GetActiveVersion(ctx, tpl.ID)
+	tplVer, err := s.repo.GetActiveVersion(ctx, tpl.ID)
 	if err != nil {
 		return nil, err
 	}
 
-	rendered, err := s.renderer.Render(version.Subject, version.Subject, data)
+	rendered, err := s.renderer.Render(tplVer.Subject, tplVer.Body, data)
 	if err != nil {
 		return nil, err
 	}
 
-	return &rendered, nil
+	tplVer.Subject = rendered.Subject
+	tplVer.Body = rendered.Body
+	return tplVer, nil
 }
 
 func (s *Service) ListVersionsByName(

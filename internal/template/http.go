@@ -56,24 +56,21 @@ func (h *Handler) Render(w http.ResponseWriter, r *http.Request) {
 		name,
 		shared.UserTemplate,
 		shared.Channel(channel),
-		req.Data,
+		req.TemplateKeyValue,
 	)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	json.NewEncoder(w).Encode(RenderResponse{
-		Subject: out.Subject,
-		Body:    out.Body,
-	})
+	shared.WriteJSON(w, http.StatusOK, out)
 }
 
 func (h *Handler) ListVersions(w http.ResponseWriter, r *http.Request) {
 	name := chi.URLParam(r, "name")
 	channel := chi.URLParam(r, "channel")
 
-	versions, err := h.service.ListVersionsByName(
+	templates, err := h.service.ListVersionsByName(
 		r.Context(),
 		name,
 		shared.Channel(channel),
@@ -83,17 +80,7 @@ func (h *Handler) ListVersions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := make([]VersionResponse, 0, len(versions))
-	for _, v := range versions {
-		resp = append(resp, VersionResponse{
-			Version:   v.Version,
-			IsActive:  v.IsActive,
-			CreatedAt: v.CreatedAt,
-		})
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp)
+	shared.WriteJSON(w, http.StatusOK, templates)
 }
 
 func (h *Handler) AddVersion(w http.ResponseWriter, r *http.Request) {
@@ -117,7 +104,7 @@ func (h *Handler) AddVersion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	shared.WriteJSON(w, http.StatusOK, nil)
+	shared.WriteJSON(w, http.StatusNoContent, nil)
 }
 
 func (h *Handler) ListTemplatesSummary(w http.ResponseWriter, r *http.Request) {

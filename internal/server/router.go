@@ -41,6 +41,10 @@ func NewRouter(log logger.Logger, database *mysql.DB, openAPIPath string, modRou
 		http.ServeFile(w, r, openAPIPath)
 	})
 
+	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "./static/index.html")
+	})
+
 	// Internal / infra APIs
 	r.Route(InternalPath, func(r chi.Router) {
 		r.Get("/health", LivenessHandler)

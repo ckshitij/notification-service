@@ -93,6 +93,23 @@ const (
 		WHERE template_id = ?
 		ORDER BY version DESC
 	`
+
+	FindDueNotificationQuery = `
+		SELECT id
+		FROM notifications
+		WHERE status = ?
+		  AND scheduled_at <= NOW()
+		ORDER BY scheduled_at
+		LIMIT ?
+	`
+
+	FindStuckSendingNotificationQuery = `
+		SELECT id
+		FROM notifications
+		WHERE status = ?
+		  AND updated_at < NOW() - INTERVAL ? SECOND
+		LIMIT ?
+	`
 )
 
 func buildGetAllTemplatesQuery(filter template.ListTemplatesFilter) (string, []any) {

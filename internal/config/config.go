@@ -13,6 +13,8 @@ type Config struct {
 	Redis      RedisConfig      `mapstructure:"redis"`
 	Kafka      KafkaConfig      `mapstructure:"kafka"`
 	Prometheus PrometheusConfig `mapstructure:"prometheus"`
+	SMTP       SMTPConfig       `mapstructure:"smtp"`
+	Slack      SlackConfig      `mapstructure:"slack"`
 }
 
 type AppConfig struct {
@@ -20,6 +22,18 @@ type AppConfig struct {
 	Env      string `mapstructure:"env"`
 	Port     int    `mapstructure:"port"`
 	LogLevel int    `mapstructure:"log_level"`
+}
+
+type SlackConfig struct {
+	WebhookURL string `mapstructure:"webhook_url"`
+}
+
+type SMTPConfig struct {
+	Host string `mapstructure:"host"`
+	Port int    `mapstructure:"port"`
+	User string `mapstructure:"user"`
+	Pass string `mapstructure:"pass"`
+	From string `mapstructure:"from"`
 }
 
 type MySQLConfig struct {
