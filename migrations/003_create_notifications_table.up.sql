@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS notifications (
   template_id BIGINT NOT NULL,
 
   recipient JSON NOT NULL,
-  payload JSON NOT NULL,
+  template_kv JSON NOT NULL,
 
   status VARCHAR(20) NOT NULL,
 

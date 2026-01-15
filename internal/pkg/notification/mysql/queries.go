@@ -9,14 +9,14 @@ import (
 const (
 	CreateNotificaionQuery = `
 		INSERT INTO notifications
-		(channel, template_id, recipient, payload, status, scheduled_at)
+		(channel, template_id, recipient, template_kv, status, scheduled_at)
 		VALUES (?, ?, ?, ?, ?, ?)
 	`
 
 	GetNotificationByIDQuery = `
 		SELECT
 			id, channel, template_id,
-			recipient, payload, status,
+			recipient, template_kv, status,
 			scheduled_at, sent_at,
 			created_at, updated_at
 		FROM notifications
@@ -43,7 +43,7 @@ const (
 )
 
 func buildListNotificationsQuery(filter notification.NotificationFilter) (string, []any) {
-	query := `SELECT id, channel, template_id, recipient, payload, status, scheduled_at, sent_at, created_at, updated_at FROM notifications`
+	query := `SELECT id, channel, template_id, recipient, template_kv, status, scheduled_at, sent_at, created_at, updated_at FROM notifications`
 	args := []any{}
 	conditions := []string{}
 
