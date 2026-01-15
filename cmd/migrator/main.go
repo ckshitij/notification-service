@@ -16,12 +16,13 @@ import (
 )
 
 func main() {
-	migrationsDir := "./migrations"
 
 	direction := flag.String("direction", "up", "migration direction: up or down")
+	configPath := flag.String("config", "./config/config.yml", "pass the config file path")
+	migrationsDir := flag.String("migrations", "./migrations", "path to openapi spec file")
 	flag.Parse()
 
-	cfg, err := config.Load("./config/config.yml")
+	cfg, err := config.Load(*configPath)
 	if err != nil {
 		panic(err)
 	}
@@ -40,7 +41,7 @@ func main() {
 
 	var migrations []string
 
-	err = filepath.Walk(migrationsDir, func(path string, info fs.FileInfo, err error) error {
+	err = filepath.Walk(*migrationsDir, func(path string, info fs.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}

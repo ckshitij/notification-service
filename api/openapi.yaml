@@ -227,7 +227,7 @@ paths:
           content:
             application/json:
               schema:
-                  $ref: "#/components/schemas/TemplateVersion"
+                  $ref: "#/components/schemas/Template"
         "400":
           description: Invalid request
         "500":
