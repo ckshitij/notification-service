@@ -6,13 +6,14 @@ import (
 	"errors"
 
 	"github.com/ckshitij/notify-srv/internal/logger"
+	mysqlwrapper "github.com/ckshitij/notify-srv/internal/mysql"
 	"github.com/ckshitij/notify-srv/internal/pkg/template"
 	"github.com/ckshitij/notify-srv/internal/shared"
-	"github.com/go-sql-driver/mysql"
+	driver "github.com/go-sql-driver/mysql"
 )
 
 func isDuplicateKey(err error) bool {
-	var mysqlErr *mysql.MySQLError
+	var mysqlErr *driver.MySQLError
 	if errors.As(err, &mysqlErr) {
 		return mysqlErr.Number == 1062
 	}
@@ -20,11 +21,11 @@ func isDuplicateKey(err error) bool {
 }
 
 type MySQLTemplate struct {
-	db  *sql.DB
+	db  *mysqlwrapper.DB
 	log logger.Logger
 }
 
-func NewTemplateRepository(db *sql.DB, log logger.Logger) *MySQLTemplate {
+func NewTemplateRepository(db *mysqlwrapper.DB, log logger.Logger) *MySQLTemplate {
 	return &MySQLTemplate{db, log}
 }
 
@@ -39,7 +40,7 @@ func (r *MySQLTemplate) Create(ctx context.Context, tpl template.Template) (int6
 		tpl.CreatedBy,
 		tpl.UpdatedBy,
 	}
-	result, err := r.db.ExecContext(ctx, query, args...)
+	result, err := r.db.ExecContext(ctx, "CreateNotification", query, args...)
 	if err != nil {
 		if isDuplicateKey(err) {
 			return -1, shared.ErrDuplicateTemplateRecord
@@ -54,7 +55,7 @@ func (r *MySQLTemplate) Create(ctx context.Context, tpl template.Template) (int6
 
 func (r *MySQLTemplate) GetByID(ctx context.Context, templateID int64) (*template.Template, error) {
 
-	row := r.db.QueryRowContext(ctx, GetTemplateByIDQuery, templateID)
+	row := r.db.QueryRowContext(ctx, "GetNotificationByID", GetTemplateByIDQuery, templateID)
 
 	var t template.Template
 	err := row.Scan(
@@ -88,7 +89,7 @@ func (r *MySQLTemplate) GetByID(ctx context.Context, templateID int64) (*templat
 func (r *MySQLTemplate) List(ctx context.Context, filter template.TemplateFilter) ([]*template.Template, error) {
 
 	query, args := buildGetAllTemplatesQuery(filter)
-	rows, err := r.db.QueryContext(ctx, query, args...)
+	rows, err := r.db.QueryContext(ctx, "ListNotification", query, args...)
 	if err != nil {
 		r.log.Error(ctx, "failed to list templates", logger.String("query", query), logger.Field{Key: "args", Value: args}, logger.Error(err))
 		return nil, err

@@ -24,6 +24,7 @@ func NewRouter(log logger.Logger, database *mysql.DB, openAPIPath string, modRou
 	r.Use(middleware.Recoverer)
 	r.Use(RequestIDMiddleware())
 	r.Use(AccessLogMiddleware(log))
+	r.Use(MetricsMiddleware())
 
 	// Public APIs
 	r.Route(BasePath, func(r chi.Router) {

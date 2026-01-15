@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/ckshitij/notify-srv/internal/config"
+	"github.com/ckshitij/notify-srv/internal/metrics"
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -33,6 +34,30 @@ func New(cfg config.MySQLConfig) (*DB, error) {
 	}
 
 	return &DB{conn: db}, nil
+}
+
+func (d *DB) ExecContext(ctx context.Context, queryName, query string, args ...any) (sql.Result, error) {
+	start := time.Now()
+	res, err := d.conn.ExecContext(ctx, query, args...)
+	duration := time.Since(start).Milliseconds()
+	metrics.SQLQueryDuration.WithLabelValues(queryName).Observe(float64(duration))
+	return res, err
+}
+
+func (d *DB) QueryContext(ctx context.Context, queryName, query string, args ...any) (*sql.Rows, error) {
+	start := time.Now()
+	rows, err := d.conn.QueryContext(ctx, query, args...)
+	duration := time.Since(start).Milliseconds()
+	metrics.SQLQueryDuration.WithLabelValues(queryName).Observe(float64(duration))
+	return rows, err
+}
+
+func (d *DB) QueryRowContext(ctx context.Context, queryName, query string, args ...any) *sql.Row {
+	start := time.Now()
+	row := d.conn.QueryRowContext(ctx, query, args...)
+	duration := time.Since(start).Milliseconds()
+	metrics.SQLQueryDuration.WithLabelValues(queryName).Observe(float64(duration))
+	return row
 }
 
 func (d *DB) Conn() *sql.DB {

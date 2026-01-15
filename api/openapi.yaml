@@ -110,8 +110,6 @@ paths:
         "400":
           description: Invalid notification ID
         "404":
-          description: Notification not found
-        "404":
           description: record not found for given id
         "500":
           description: Something went wrong on server

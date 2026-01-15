@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/ckshitij/notify-srv/internal/logger"
+	"github.com/ckshitij/notify-srv/internal/metrics"
 	"github.com/google/uuid"
 )
 
@@ -67,6 +68,17 @@ func RequestIDMiddleware() func(http.Handler) http.Handler {
 
 			// Call the next handler in the chain
 			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
+}
+
+func MetricsMiddleware() func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			start := time.Now()
+			next.ServeHTTP(w, r)
+			duration := time.Since(start).Milliseconds()
+			metrics.APIRequestsDuration.WithLabelValues(r.Method, r.URL.Path).Observe(float64(duration))
 		})
 	}
 }

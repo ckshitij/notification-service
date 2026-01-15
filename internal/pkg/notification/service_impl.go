@@ -94,7 +94,7 @@ func (s *serviceImpl) Process(
 	})
 
 	// Render content
-	content, err := s.renderer.Render(tplVersion.Body, tplVersion.Subject, n.TemplateKeyValue)
+	content, err := s.renderer.Render(tplVersion.Subject, tplVersion.Body, n.TemplateKeyValue)
 	if err != nil {
 		s.repo.UpdateStatus(ctx, n.ID, StatusFailed)
 		return err

@@ -40,10 +40,10 @@ func processModules(ctx context.Context, database *mysql.DB, cfg *config.Config,
 	}
 
 	renderer := renderer.NewGoTemplateRenderer()
-	templateRepo := tmplsql.NewTemplateRepository(database.Conn(), log)
+	templateRepo := tmplsql.NewTemplateRepository(database, log)
 	templateService := template.NewTemplateService(templateRepo, renderer)
 
-	notificationRepo := notfysql.NewNotificationRepository(database.Conn(), log)
+	notificationRepo := notfysql.NewNotificationRepository(database, log)
 	notificationSrv := notification.NewNotificationService(notificationRepo, renderer, senders, templateRepo, log)
 	scheduler := notification.NewSchedular(notificationSrv, notificationRepo, log, 5*time.Second, 50)
 

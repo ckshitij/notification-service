@@ -104,6 +104,11 @@ services:
       - "9090:9090"
     volumes:
       - ./deployments/docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=15d"
     networks:
       - notification-net
 
@@ -130,9 +135,11 @@ services:
       - notification-net
 
   notify-srv:
+    image: notif/notify-srv:0.0.1
     build:
+      context: .
       dockerfile: Dockerfile
-    container_name: notif-srv
+    container_name: notify-srv
     restart: unless-stopped
     depends_on:
       mysql:
