@@ -7,31 +7,33 @@ A robust, scalable, and observable notification service built with Go. It provid
 ```mermaid
 sequenceDiagram
     participant Client
-    participant Notification Service
-    participant Database
-    participant Email Service
+    participant NS as Notification Service
+    participant DB as Database
+    participant Email as Email Service
     participant Slack
-    participant In-App Store
+    participant InApp as In-App Store
 
-    Client->>Notification Service: POST /v1/notifications (Send Notification)
-    Notification Service->>Database: Create Notification (status: pending)
-    Notification Service-->>Client: 202 Accepted (with notification ID)
+    Client->>NS: POST /v1/notifications (Send Notification)
+    NS->>DB: Create Notification (status: pending)
+    NS-->>Client: 202 Accepted (notification ID)
 
     alt Asynchronous Processing
-        Notification Service->>Notification Service: go Process(notificationID)
-        Notification Service->>Database: Acquire Notification for sending
-        Notification Service->>Database: Get Template
-        Notification Service->>Notification Service: Render Template
-        alt Channel
-            case Email
-                Notification Service->>Email Service: Send Email
-            case Slack
-                Notification Service->>Slack: Send Message
-            case In-App
-                Notification Service->>In-App Store: Save Notification
+        NS->>NS: go Process(notificationID)
+        NS->>DB: Acquire Notification for sending
+        NS->>DB: Get Template
+        NS->>NS: Render Template
+
+        alt Email Channel
+            NS->>Email: Send Email
+        else Slack Channel
+            NS->>Slack: Send Message
+        else In-App Channel
+            NS->>InApp: Save Notification
         end
-        Notification Service->>Database: Update Notification (status: sent/failed)
+
+        NS->>DB: Update Notification (status: sent/failed)
     end
+
 ```
 
 ## Features
