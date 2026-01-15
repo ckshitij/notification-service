@@ -3,7 +3,7 @@ package notification
 import (
 	"context"
 
-	"github.com/ckshitij/notify-srv/internal/renderer"
+	"github.com/ckshitij/notify-srv/internal/pkg/renderer"
 )
 
 type Sender interface {

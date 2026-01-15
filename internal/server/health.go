@@ -3,7 +3,7 @@ package server
 import (
 	"net/http"
 
-	"github.com/ckshitij/notify-srv/internal/repository/mysql"
+	"github.com/ckshitij/notify-srv/internal/mysql"
 )
 
 func LivenessHandler(w http.ResponseWriter, _ *http.Request) {

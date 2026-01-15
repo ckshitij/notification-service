@@ -15,9 +15,22 @@ func WithRequestID(ctx context.Context, requestID string) context.Context {
 func extractContextFields(ctx context.Context) []Field {
 	var fields []Field
 
-	if v := ctx.Value(RequestIDKey); v != nil {
-		fields = append(fields, String("request_id", v.(string)))
+	id := getRequestIDFromContext(ctx)
+	if id != "" {
+		fields = append(fields, String("request_id", id))
 	}
 
 	return fields
+}
+
+func getRequestIDFromContext(ctx context.Context) string {
+	if ctx == nil {
+		return ""
+	}
+
+	if requestID, ok := ctx.Value("req-id").(string); ok {
+		return requestID
+	}
+
+	return ""
 }

@@ -150,82 +150,16 @@ paths:
           description: Template created successfully
         "400":
           description: Invalid request
+        "409":
+          description: Conflict duplicate record found
+        "403":
+          description: operation not permitted
         "500":
           description: Something went wrong on server
-
-  /templates/{channel}/{name}/versions:
-    post:
-      tags: [Templates]
-      summary: Add a new version to a template
-      parameters:
-        - $ref: "#/components/parameters/Channel"
-        - $ref: "#/components/parameters/TemplateName"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/AddVersionRequest"
-      responses:
-        "201":
-          description: Version created
-        "400":
-          description: Invalid request
-        "500":
-          description: Something went wrong on server
-
+    
     get:
       tags: [Templates]
       summary: List all versions of a template
-      parameters:
-        - $ref: "#/components/parameters/Channel"
-        - $ref: "#/components/parameters/TemplateName"
-      responses:
-        "200":
-          description: List of template versions
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/TemplateVersion"
-        "400":
-          description: Invalid request
-        "500":
-          description: Something went wrong on server
-
-  /templates/{channel}/{name}/render:
-    post:
-      tags: [Templates]
-      summary: Render a template (preview)
-      parameters:
-        - $ref: "#/components/parameters/Channel"
-        - $ref: "#/components/parameters/TemplateName"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/RenderTemplateRequest"
-      responses:
-        "200":
-          description: Rendered template output
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/TemplateSummary"
-        "400":
-          description: Invalid request
-        "500":
-          description: Something went wrong on server
-
-  /templates/summary:
-    get:
-      tags: [Templates]
-      summary: List templates with active version
-      description: >
-        Returns all templates joined with their active version.
-        This is a summary endpoint intended for admin and UI usage.
       parameters:
         - name: channel
           in: query
@@ -239,6 +173,30 @@ paths:
           schema:
             type: string
             enum: [system, user]
+        - name: name
+          in: query
+          required: false
+          schema:
+            type: string
+            value: custom_template
+        - name: is_active
+          in: query
+          required: false
+          schema:
+            type: boolean
+            example: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
       responses:
         "200":
           description: List of templates with active version
@@ -247,7 +205,61 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/TemplateSummary"
+                  $ref: "#/components/schemas/Template"
+        "500":
+          description: Something went wrong on server
+
+  /templates/{id}:
+    get:
+      tags: [Templates]
+      summary: Fetch template details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+            example: 1
+      responses:
+        "200":
+          description: Fetch template details
+          content:
+            application/json:
+              schema:
+                  $ref: "#/components/schemas/TemplateVersion"
+        "400":
+          description: Invalid request
+        "500":
+          description: Something went wrong on server
+
+  /templates/{id}/render:
+    post:
+      tags: [Templates]
+      summary: Render a template (preview)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+            example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RenderTemplateRequest"
+      responses:
+        "200":
+          description: Rendered template output
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Template"
+        "400":
+          description: Invalid request
         "500":
           description: Something went wrong on server
 
@@ -271,7 +283,6 @@ components:
         example: custom_welcome
 
   schemas:
-
     CreateTemplateRequest:
       type: object
       required: [name, channel]
@@ -285,11 +296,6 @@ components:
         channel:
           type: string
           enum: [email, slack, in_app]
-
-    AddVersionRequest:
-      type: object
-      required: [body]
-      properties:
         subject:
           type: string
           example: Welcome {{.UserName}}
@@ -308,20 +314,7 @@ components:
             UserName: Kshitij
             AppName: NotifyX
 
-    TemplateVersion:
-      type: object
-      properties:
-        version:
-          type: integer
-          example: 2
-        is_active:
-          type: boolean
-          example: true
-        created_at:
-          type: string
-          format: date-time
-
-    TemplateSummary:
+    Template:
       type: object
       properties:
         id:
@@ -340,9 +333,9 @@ components:
         type:
           type: string
           enum: [system, user]
-        active_version:
-          type: integer
-          example: 2
+        is_active:
+          type: boolean
+          example: 1
         subject:
           type: string
           nullable: true
@@ -363,14 +356,14 @@ components:
       type: object
       required:
         - channel
-        - template_version_id
+        - template_id
         - recipient
         - template_key_value
       properties:
         channel:
           type: string
           enum: [email, slack, in_app]
-        template_version_id:
+        template_id:
           type: integer
           format: int64
           example: 12
@@ -419,7 +412,7 @@ components:
         channel:
           type: string
           enum: [email, slack, in_app]
-        template_version_id:
+        template_id:
           type: integer
           format: int64
           example: 12

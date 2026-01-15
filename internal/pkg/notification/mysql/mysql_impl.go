@@ -1,14 +1,25 @@
-package repository
+package mysql
 
 import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"time"
 
 	"github.com/ckshitij/notify-srv/internal/logger"
-	"github.com/ckshitij/notify-srv/internal/notification"
+	"github.com/ckshitij/notify-srv/internal/pkg/notification"
+	"github.com/ckshitij/notify-srv/internal/shared"
+	"github.com/go-sql-driver/mysql"
 )
+
+func isFKViolation(err error) bool {
+	var mysqlErr *mysql.MySQLError
+	if errors.As(err, &mysqlErr) {
+		return mysqlErr.Number == 1452
+	}
+	return false
+}
 
 type NotificationRepository struct {
 	db  *sql.DB
@@ -21,18 +32,30 @@ func NewNotificationRepository(db *sql.DB, log logger.Logger) *NotificationRepos
 
 func (r *NotificationRepository) Create(ctx context.Context, n *notification.Notification) (int64, error) {
 
-	recipient, _ := json.Marshal(n.Recipient)
-	payload, _ := json.Marshal(n.TemplateKeyValue)
+	recipient, err := json.Marshal(n.Recipient)
+	if err != nil {
+		r.log.Error(ctx, "failed to marshal recipient", logger.Any("Recipient", n.Recipient), logger.Error(err))
+		return -1, shared.ErrInvalidRecipient
+	}
+
+	payload, err := json.Marshal(n.TemplateKeyValue)
+	if err != nil {
+		r.log.Error(ctx, "failed to marshal TemplateKeyValue", logger.Any("TemplateKeyValue", n.Recipient), logger.Error(err))
+		return -1, shared.ErrInvalidTemplateKeyValue
+	}
 
 	res, err := r.db.ExecContext(ctx, CreateNotificaionQuery,
 		n.Channel,
-		n.TemplateVersionID,
+		n.TemplateID,
 		recipient,
 		payload,
 		n.Status,
 		n.ScheduledAt,
 	)
 	if err != nil {
+		if isFKViolation(err) {
+			return -1, shared.ErrTemplateNotFound
+		}
 		r.log.Error(ctx, "failed to create notification", logger.Error(err))
 		return -1, err
 	}
@@ -44,6 +67,9 @@ func (r *NotificationRepository) Create(ctx context.Context, n *notification.Not
 
 func (r *NotificationRepository) UpdateStatus(ctx context.Context, id int64, status notification.NotificationStatus) error {
 	_, err := r.db.ExecContext(ctx, `UPDATE notifications SET status = ? WHERE id = ?`, status, id)
+	if err != nil {
+		r.log.Error(ctx, "failed to update notification status ", logger.Int64("notificationID", id), logger.Error(err))
+	}
 	return err
 }
 
@@ -60,7 +86,7 @@ func (r *NotificationRepository) GetByID(ctx context.Context, id int64) (*notifi
 	if err := row.Scan(
 		&n.ID,
 		&n.Channel,
-		&n.TemplateVersionID,
+		&n.TemplateID,
 		&recipient,
 		&payload,
 		&n.Status,
@@ -83,6 +109,7 @@ func (r *NotificationRepository) FindDue(ctx context.Context, limit int) ([]int6
 
 	rows, err := r.db.QueryContext(ctx, FindDueNotificationQuery, notification.StatusScheduled, limit)
 	if err != nil {
+		r.log.Error(ctx, "failed to find due notifications ", logger.Int("limit", limit), logger.Error(err))
 		return nil, err
 	}
 	defer rows.Close()
@@ -91,11 +118,11 @@ func (r *NotificationRepository) FindDue(ctx context.Context, limit int) ([]int6
 	for rows.Next() {
 		var id int64
 		if err := rows.Scan(&id); err != nil {
+			r.log.Error(ctx, "failed to scan due notifications ids", logger.Error(err))
 			return nil, err
 		}
 		ids = append(ids, id)
 	}
-	r.log.Debug(ctx, "get notification scheduled ids ", logger.Int("due_ids_count", len(ids)))
 
 	return ids, nil
 }
@@ -104,6 +131,7 @@ func (r *NotificationRepository) FindStuckSending(ctx context.Context, olderThan
 
 	rows, err := r.db.QueryContext(ctx, FindStuckSendingNotificationQuery, notification.StatusSending, int(olderThan.Seconds()), limit)
 	if err != nil {
+		r.log.Error(ctx, "failed to find stuck notifications ", logger.Any("olderThan", olderThan), logger.Int("limit", limit), logger.Error(err))
 		return nil, err
 	}
 	defer rows.Close()
@@ -112,11 +140,11 @@ func (r *NotificationRepository) FindStuckSending(ctx context.Context, olderThan
 	for rows.Next() {
 		var id int64
 		if err := rows.Scan(&id); err != nil {
+			r.log.Error(ctx, "failed to scan stuck notifications ids", logger.Error(err))
 			return nil, err
 		}
 		ids = append(ids, id)
 	}
-	r.log.Debug(ctx, "get notification stuck ids ", logger.Int("stuck_ids_count", len(ids)))
 	return ids, nil
 }
 
@@ -130,7 +158,7 @@ func (r *NotificationRepository) List(ctx context.Context, filter notification.N
 	}
 	defer rows.Close()
 
-	var notifications []*notification.Notification
+	var notifications = []*notification.Notification{}
 
 	for rows.Next() {
 		var (
@@ -142,7 +170,7 @@ func (r *NotificationRepository) List(ctx context.Context, filter notification.N
 		if err := rows.Scan(
 			&n.ID,
 			&n.Channel,
-			&n.TemplateVersionID,
+			&n.TemplateID,
 			&recipient,
 			&payload,
 			&n.Status,
@@ -151,7 +179,7 @@ func (r *NotificationRepository) List(ctx context.Context, filter notification.N
 			&n.CreatedAt,
 			&n.UpdatedAt,
 		); err != nil {
-			r.log.Error(ctx, "failed to get notifications ", logger.Error(err))
+			r.log.Error(ctx, "failed to scan notifications list", logger.Error(err))
 			return nil, err
 		}
 
@@ -162,6 +190,7 @@ func (r *NotificationRepository) List(ctx context.Context, filter notification.N
 	}
 
 	if err := rows.Err(); err != nil {
+		r.log.Error(ctx, "failed to find scan notifications list", logger.Error(err))
 		return nil, err
 	}
 
@@ -170,18 +199,23 @@ func (r *NotificationRepository) List(ctx context.Context, filter notification.N
 
 func (r *NotificationRepository) MarkSent(ctx context.Context, id int64, sentAt time.Time) error {
 	_, err := r.db.ExecContext(ctx, `UPDATE notifications SET status = ?, sent_at = ? WHERE id = ?`, notification.StatusSent, sentAt, id)
+	if err != nil {
+		r.log.Error(ctx, "failed to mark notification ", logger.String("status", "sent"), logger.Int64("notificationID", id), logger.Error(err))
+	}
 	return err
 }
 
 func (r *NotificationRepository) AcquireForSending(ctx context.Context, id int64) (bool, error) {
 
-	res, err := r.db.ExecContext(ctx, `UPDATE notifications SET status = ? WHERE id = ? AND status IN (?, ?)`,
+	res, err := r.db.ExecContext(ctx, `UPDATE notifications SET status = ? WHERE id = ? AND status IN (?, ?, ?)`,
 		notification.StatusSending,
 		id,
+		notification.StatusSending,
 		notification.StatusPending,
 		notification.StatusScheduled,
 	)
 	if err != nil {
+		r.log.Error(ctx, "failed to acquire notification ", logger.String("status", "sending"), logger.Int64("notificationID", id), logger.Error(err))
 		return false, err
 	}
 

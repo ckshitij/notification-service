@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"net/http"
 	"strings"
 	"time"
@@ -43,22 +44,28 @@ func AccessLogMiddleware(log logger.Logger) func(http.Handler) http.Handler {
 	}
 }
 
-func RequestIDMiddleware(log logger.Logger) func(http.Handler) http.Handler {
+func RequestIDMiddleware() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			reqID := r.Header.Get("X-Request-ID")
-			if reqID == "" {
-				reqID = uuid.NewString()
+			// Generate a new request ID or retrieve it from the request context
+			requestID := r.Header.Get("X-Request-ID")
+			ctx := r.Context()
+			if requestID == "" {
+				u, err := uuid.NewRandom()
+				if err != nil {
+					// Handle the error, e.g., log it or return a default request ID
+					requestID = "default-request-id"
+				} else {
+					requestID = u.String()
+				}
+				r.Header.Set("X-Request-ID", requestID)
 			}
 
-			ctx := logger.WithRequestID(r.Context(), reqID)
-			w.Header().Set("X-Request-ID", reqID)
+			// Set the request ID in the response header
+			w.Header().Set("X-Request-ID", requestID)
+			ctx = context.WithValue(ctx, "req-id", requestID)
 
-			log.Info(ctx, "incoming request",
-				logger.String("method", r.Method),
-				logger.String("path", r.URL.Path),
-			)
-
+			// Call the next handler in the chain
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

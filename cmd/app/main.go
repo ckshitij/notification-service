@@ -12,16 +12,18 @@ import (
 
 	"github.com/ckshitij/notify-srv/internal/config"
 	"github.com/ckshitij/notify-srv/internal/logger"
-	"github.com/ckshitij/notify-srv/internal/notification"
-	"github.com/ckshitij/notify-srv/internal/renderer"
-	"github.com/ckshitij/notify-srv/internal/repository"
-	"github.com/ckshitij/notify-srv/internal/repository/mysql"
-	"github.com/ckshitij/notify-srv/internal/senders/email"
-	"github.com/ckshitij/notify-srv/internal/senders/inapp"
-	"github.com/ckshitij/notify-srv/internal/senders/slack"
+	"github.com/ckshitij/notify-srv/internal/pkg/notification"
+	notfysql "github.com/ckshitij/notify-srv/internal/pkg/notification/mysql"
+	tmplsql "github.com/ckshitij/notify-srv/internal/pkg/template/mysql"
+
+	"github.com/ckshitij/notify-srv/internal/mysql"
+	"github.com/ckshitij/notify-srv/internal/pkg/renderer"
+	"github.com/ckshitij/notify-srv/internal/pkg/senders/email"
+	"github.com/ckshitij/notify-srv/internal/pkg/senders/inapp"
+	"github.com/ckshitij/notify-srv/internal/pkg/senders/slack"
+	"github.com/ckshitij/notify-srv/internal/pkg/template"
 	"github.com/ckshitij/notify-srv/internal/server"
 	"github.com/ckshitij/notify-srv/internal/shared"
-	"github.com/ckshitij/notify-srv/internal/template"
 )
 
 func processModules(ctx context.Context, database *mysql.DB, cfg *config.Config, log logger.Logger) map[string]http.Handler {
@@ -37,17 +39,18 @@ func processModules(ctx context.Context, database *mysql.DB, cfg *config.Config,
 		shared.ChannelInApp: inapp.New(database.Conn()),
 	}
 
-	templateRepo := repository.NewTemplateRepository(database.Conn())
-	notificationRepo := repository.NewNotificationRepository(database.Conn(), log)
 	renderer := renderer.NewGoTemplateRenderer()
+	templateRepo := tmplsql.NewTemplateRepository(database.Conn(), log)
+	templateService := template.NewTemplateService(templateRepo, renderer)
 
-	notificationSrv := notification.New(notificationRepo, renderer, senders, templateRepo, log)
+	notificationRepo := notfysql.NewNotificationRepository(database.Conn(), log)
+	notificationSrv := notification.NewNotificationService(notificationRepo, renderer, senders, templateRepo, log)
 	scheduler := notification.NewSchedular(notificationSrv, notificationRepo, log, 5*time.Second, 50)
 
 	go scheduler.Run(ctx)
 
 	return map[string]http.Handler{
-		"/v1/templates":     template.NewTemplateRoutes(templateRepo, renderer),
+		"/v1/templates":     template.NewTemplateRoutes(templateService),
 		"/v1/notifications": notification.NewNotificationRoutes(notificationSrv),
 	}
 }

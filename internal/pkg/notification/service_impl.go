@@ -6,34 +6,26 @@ import (
 	"time"
 
 	"github.com/ckshitij/notify-srv/internal/logger"
-	"github.com/ckshitij/notify-srv/internal/renderer"
+	"github.com/ckshitij/notify-srv/internal/pkg/renderer"
+	"github.com/ckshitij/notify-srv/internal/pkg/template"
 	"github.com/ckshitij/notify-srv/internal/shared"
-	"github.com/ckshitij/notify-srv/internal/template"
 )
-
-type Service interface {
-	SendNow(ctx context.Context, n *Notification) (int64, error)
-	Schedule(ctx context.Context, n *Notification, when time.Time) (int64, error)
-	Process(ctx context.Context, notificationID int64) error
-	GetByID(ctx context.Context, notificationID int64) (*Notification, error)
-	List(ctx context.Context, filter NotificationFilter) ([]*Notification, error)
-}
 
 type serviceImpl struct {
 	repo         Repository
 	renderer     renderer.Renderer
 	senders      map[shared.Channel]Sender
-	templateRepo template.Repository
+	templateRepo template.TemplateRepository
 	log          logger.Logger
 }
 
-func New(
+func NewNotificationService(
 	repo Repository,
 	renderer renderer.Renderer,
 	senders map[shared.Channel]Sender,
-	templateRepo template.Repository,
+	templateRepo template.TemplateRepository,
 	log logger.Logger,
-) Service {
+) *serviceImpl {
 	return &serviceImpl{repo, renderer, senders, templateRepo, log}
 }
 
@@ -75,8 +67,8 @@ func (s *serviceImpl) Process(
 		return err
 	}
 	if !acquired {
-		// Someone else is processing or it's already done
-		return nil
+		s.log.Warn(ctx, "failed to aquire the record", logger.String("status", "sending"), logger.Int64("notificationID", notificationID))
+		// return nil
 	}
 
 	n, err := s.repo.GetByID(ctx, notificationID)
@@ -85,11 +77,13 @@ func (s *serviceImpl) Process(
 	}
 
 	// Load template version
-	tplVersion, err := s.templateRepo.GetActiveVersion(
-		ctx,
-		n.TemplateVersionID,
-	)
-	if err != nil {
+	tplVersion, err := s.templateRepo.GetByID(ctx, n.TemplateID)
+	if err != nil || tplVersion == nil {
+		s.log.Warn(ctx, "failed to get template info",
+			logger.Int64("templateID", n.TemplateID),
+			logger.Int64("notificationID", notificationID),
+			logger.Error(err),
+		)
 		s.repo.UpdateStatus(ctx, n.ID, StatusFailed)
 		return err
 	}

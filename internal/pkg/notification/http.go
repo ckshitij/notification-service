@@ -33,7 +33,7 @@ func (h *Handler) SendNow(w http.ResponseWriter, r *http.Request) {
 
 	id, err := h.service.SendNow(r.Context(), n)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), shared.ErrorHttpMapper(err))
 		return
 	}
 
@@ -130,9 +130,9 @@ func (h *Handler) Process(w http.ResponseWriter, r *http.Request) {
 func mapRequestToNotification(req SendNowRequest) (*Notification, error) {
 
 	n := &Notification{
-		Channel:           shared.Channel(req.Channel),
-		TemplateVersionID: req.TemplateVersionID,
-		TemplateKeyValue:  req.TemplateKeyValue,
+		Channel:          shared.Channel(req.Channel),
+		TemplateID:       req.TemplateID,
+		TemplateKeyValue: req.TemplateKeyValue,
 	}
 
 	switch req.Channel {

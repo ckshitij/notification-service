@@ -5,8 +5,8 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/ckshitij/notify-srv/internal/notification"
-	"github.com/ckshitij/notify-srv/internal/renderer"
+	"github.com/ckshitij/notify-srv/internal/pkg/notification"
+	"github.com/ckshitij/notify-srv/internal/pkg/renderer"
 )
 
 type Sender struct {

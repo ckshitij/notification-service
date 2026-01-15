@@ -2,7 +2,7 @@ app:
   name: notification-service
   env: local
   port: 8098
-  log_level: -1 # Debug level
+  log_level: 0 # Debug level
 
 mysql:
   host: localhost

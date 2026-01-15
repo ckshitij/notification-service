@@ -5,7 +5,7 @@ import (
 
 	"github.com/ckshitij/notify-srv/internal/logger"
 	"github.com/ckshitij/notify-srv/internal/metrics"
-	"github.com/ckshitij/notify-srv/internal/repository/mysql"
+	"github.com/ckshitij/notify-srv/internal/mysql"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	httpSwagger "github.com/swaggo/http-swagger"
@@ -20,9 +20,9 @@ func NewRouter(log logger.Logger, database *mysql.DB, openAPIPath string, modRou
 	r := chi.NewRouter()
 
 	// Global middleware
-	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Recoverer)
+	r.Use(RequestIDMiddleware())
 	r.Use(AccessLogMiddleware(log))
 
 	// Public APIs

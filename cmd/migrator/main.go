@@ -12,7 +12,7 @@ import (
 
 	"github.com/ckshitij/notify-srv/internal/config"
 	"github.com/ckshitij/notify-srv/internal/logger"
-	"github.com/ckshitij/notify-srv/internal/repository/mysql"
+	"github.com/ckshitij/notify-srv/internal/mysql"
 )
 
 func main() {

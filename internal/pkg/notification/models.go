@@ -29,16 +29,16 @@ type NotificationRecipient struct {
 }
 
 type Notification struct {
-	ID                int64                 `json:"id"`
-	Channel           shared.Channel        `json:"channel"`
-	TemplateVersionID int64                 `json:"template_version_id"`
-	Recipient         NotificationRecipient `json:"recipient"`
-	TemplateKeyValue  map[string]any        `json:"template_key_value"`
-	Status            NotificationStatus    `json:"status"`
-	ScheduledAt       *time.Time            `json:"scheduled_at,omitempty"`
-	SentAt            *time.Time            `json:"sent_at,omitempty"`
-	CreatedAt         time.Time             `json:"created_at"`
-	UpdatedAt         time.Time             `json:"updated_at"`
+	ID               int64                 `json:"id"`
+	Channel          shared.Channel        `json:"channel"`
+	TemplateID       int64                 `json:"template_id"`
+	Recipient        NotificationRecipient `json:"recipient"`
+	TemplateKeyValue map[string]any        `json:"template_key_value"`
+	Status           NotificationStatus    `json:"status"`
+	ScheduledAt      *time.Time            `json:"scheduled_at,omitempty"`
+	SentAt           *time.Time            `json:"sent_at,omitempty"`
+	CreatedAt        time.Time             `json:"created_at"`
+	UpdatedAt        time.Time             `json:"updated_at"`
 }
 
 type NotificationFilter struct {
@@ -49,7 +49,7 @@ type NotificationFilter struct {
 type SendNowRequest struct {
 	Channel shared.Channel `json:"channel"`
 
-	TemplateVersionID int64 `json:"template_version_id"`
+	TemplateID int64 `json:"template_id"`
 
 	Recipient        map[string]string `json:"recipient"`
 	TemplateKeyValue map[string]any    `json:"template_key_value"`
