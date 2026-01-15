@@ -2,12 +2,44 @@
 
 A robust, scalable, and observable notification service built with Go. It provides a centralized system for managing and sending notifications across multiple channels like Email, Slack, and In-App.
 
+## Flow
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Notification Service
+    participant Database
+    participant Email Service
+    participant Slack
+    participant In-App Store
+
+    Client->>Notification Service: POST /v1/notifications (Send Notification)
+    Notification Service->>Database: Create Notification (status: pending)
+    Notification Service-->>Client: 202 Accepted (with notification ID)
+
+    alt Asynchronous Processing
+        Notification Service->>Notification Service: go Process(notificationID)
+        Notification Service->>Database: Acquire Notification for sending
+        Notification Service->>Database: Get Template
+        Notification Service->>Notification Service: Render Template
+        alt Channel
+            case Email
+                Notification Service->>Email Service: Send Email
+            case Slack
+                Notification Service->>Slack: Send Message
+            case In-App
+                Notification Service->>In-App Store: Save Notification
+        end
+        Notification Service->>Database: Update Notification (status: sent/failed)
+    end
+```
+
 ## Features
 
 - **Multi-Channel Support**: Easily send notifications via Email, Slack, and In-App channels.
 - **Dynamic Templates**: Utilizes Go's templating engine (`text/template`) for dynamic and version-controlled notification content.
 - **RESTful API**: A clean and simple API for managing templates and sending notifications. (See `api/openapi.yaml` for the full specification).
-- **Asynchronous Processing**: Leverages Kafka for queuing and processing notification requests asynchronously, ensuring high throughput and resilience.
+- **Asynchronous Processing**: Leverages Goroutines for processing notification requests asynchronously, ensuring high throughput and resilience.
 - **Database Migrations**: Manages database schema changes cleanly using a dedicated migrator tool.
 - **Observability**: Exposes application metrics in Prometheus format for easy monitoring and alerting.
 - **Containerized**: Comes with a complete `docker-compose` setup for all dependencies, enabling a one-command local environment startup.
@@ -17,11 +49,11 @@ A robust, scalable, and observable notification service built with Go. It provid
 - **Language**: Go (v1.24)
 - **Framework**: Chi (for routing) & Viper (for configuration)
 - **Database**: MySQL 8.4
-- **Message Broker**: Kafka
-- **Cache**: Redis
 - **Monitoring**: Prometheus & Grafana
 - **Local Email Testing**: MailHog
 - **Containerization**: Docker & Docker Compose
+
+> **Note on Kafka and Redis**: The `docker-compose.yml` and configuration files include setup for Kafka and Redis, as they are planned for future integration to enhance scalability and caching. However, the current implementation does not yet utilize them.
 
 ## Prerequisites
 
@@ -42,15 +74,18 @@ git clone https://github.com/ckshitij/notify-srv.git
 cd notify-srv
 ```
 
-### 2. Start Dependencies
+### 2. Start Dependencies and Run the Application
 
-All required backing services (MySQL, Kafka, Redis, etc.) are defined in the `docker-compose.yml` file. Start them all in detached mode:
+You can run the entire stack, including the application and its dependencies, using Docker Compose.
 
 ```bash
-docker-compose -f deployments/docker-compose.yml up -d
+docker-compose up -d --build
 ```
 
-This will start all services and expose their default ports. You can check the status with `docker-compose -f deployments/docker-compose.yml ps`.
+This command will:
+- Build the `notify-srv` Docker image.
+- Start all services defined in `docker-compose.yml` (MySQL, Prometheus, etc.) in detached mode.
+- The application will be available on port `8098`.
 
 ### 3. Run Database Migrations
 
@@ -60,29 +95,14 @@ Once the database container is healthy, run the database migrations to set up th
 go run cmd/migrator/main.go
 ```
 
-### 4. Run the Application
-
-Finally, start the main notification service application:
-
-```bash
-go run cmd/app/main.go
-```
-
-The service should now be running and connected to all its dependencies. By default, it runs on port `8000`.
-
-### 5. Accessing Services
+### 4. Accessing Services
 
 Once everything is running, you can access the various components:
 
 - **Notification Service Swagger UI**: `http://localhost:8098/swagger/index.html`
-- **Kafka UI**: `http://localhost:8081`
 - **Grafana Dashboard**: `http://localhost:3000` (Login: `notif_admin` / `Grafana@123`)
 - **MailHog (Email Viewer)**: `http://localhost:8025`
 - **Prometheus Targets**: `http://localhost:9090`
-
-## API Documentation
-
-The API is documented using the OpenAPI specification. The definition can be found in `api/openapi.yaml`.
 
 ## Running Tests
 
@@ -108,7 +128,6 @@ go test ./...
   - `server/`: HTTP server setup, routing, and middleware.
 - `migrations/`: SQL migration files (`.up.sql` and `.down.sql`).
 - `static/`: Static assets (if any).
-
 
 ## Core Logic (`internal/pkg`)
 
