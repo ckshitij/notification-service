@@ -26,7 +26,7 @@ func NewZapLogger(env string, level int) (Logger, error) {
 	cfg.OutputPaths = []string{"stdout"}
 	cfg.ErrorOutputPaths = []string{"stderr"}
 
-	zl, err := cfg.Build(zap.AddCaller(), zap.AddCallerSkip(1))
+	zl, err := cfg.Build(zap.AddCaller(), zap.AddCallerSkip(1), zap.AddStacktrace(zap.DPanicLevel))
 	if err != nil {
 		return nil, err
 	}

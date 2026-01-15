@@ -98,7 +98,7 @@ const (
 		SELECT id
 		FROM notifications
 		WHERE status = ?
-		  AND scheduled_at <= NOW()
+		  AND scheduled_at <= UTC_TIMESTAMP()
 		ORDER BY scheduled_at
 		LIMIT ?
 	`

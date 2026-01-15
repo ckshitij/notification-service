@@ -56,15 +56,7 @@ func (h *Handler) Schedule(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := h.service.Schedule(
-		r.Context(),
-		&Notification{
-			Channel:           n.Channel,
-			TemplateVersionID: n.TemplateVersionID,
-			TemplateKeyValue:  n.TemplateKeyValue,
-		},
-		req.ScheduledAt,
-	)
+	id, err := h.service.Schedule(r.Context(), n, req.ScheduledAt)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
