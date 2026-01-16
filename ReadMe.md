@@ -38,6 +38,17 @@ sequenceDiagram
 
 > **Note on Kafka**: The `docker-compose.yml` and configuration files include setup for Kafka, as they are planned for future integration to enhance scalability. However, the current implementation does not yet utilize them, but work in progress.
 
+## Web UI for End-to-End Testing
+
+This project includes a simple web interface to demonstrate and test the complete end-to-end flow of creating templates and sending notifications.
+Access the URL to serve the HTML `http://localhost:8098`
+
+- **Ensure the service is running** by following the steps above (`docker-compose up -d --build`).
+- **Use the Interface**:
+    *   **Create Templates**: Use the form on the left to create new notification templates for different channels.
+    *   **Send Notifications**: Once a template is created, it will appear in the dropdown. You can then select it, provide recipient details and a payload, and send a notification immediately or schedule it for later.
+    *   **View Notifications**: The right-hand panel shows a list of recent notifications and their statuses, which you can refresh.
+
 ## Features
 
 - **Multi-Channel Support**: Easily send notifications via Email, Slack, and In-App channels.
@@ -97,11 +108,22 @@ Once the database container is healthy, run the database migrations to set up th
 go run cmd/migrator/main.go
 ```
 
+## Web UI for End-to-End Testing
+
+This project includes a simple web interface to demonstrate and test the complete end-to-end flow of creating templates and sending notifications.
+Access the URL to serve the HTML `http://localhost:8098`
+  **Ensure the service is running** by following the steps above (`docker-compose up -d --build`).
+  **Use the Interface**:
+    *   **Create Templates**: Use the form on the left to create new notification templates for different channels.
+    *   **Send Notifications**: Once a template is created, it will appear in the dropdown. You can then select it, provide recipient details and a payload, and send a notification immediately or schedule it for later.
+    *   **View Notifications**: The right-hand panel shows a list of recent notifications and their statuses, which you can refresh.
+
 ### 4. Accessing Services
 
 Once everything is running, you can access the various components:
 
-- **Notification Service Swagger UI**: `http://localhost:8098/swagger/index.html`
+- **Notification Service API**: `http://localhost:8098/`
+- **Web UI for E2E Testing**: Open `static/index.html` in your browser to access a UI for testing the end-to-end flow.
 - **Grafana Dashboard**: `http://localhost:3000` (Login: `notif_admin` / `Grafana@123`)
 - **MailHog (Email Viewer)**: `http://localhost:8025`
 - **Prometheus Targets**: `http://localhost:9090`

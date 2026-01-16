@@ -2,16 +2,24 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Notification Service – Trigger Notification</title>
+  <title>Notification Service - E2E Flow</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       background: #0f172a;
       color: #e5e7eb;
       padding: 30px;
+      display: flex;
+      gap: 40px;
     }
-    h1 {
+    .column {
+      flex: 1;
+      max-width: 600px;
+    }
+    h1, h2 {
       color: #38bdf8;
+      border-bottom: 1px solid #334155;
+      padding-bottom: 10px;
     }
     label {
       display: block;
@@ -25,9 +33,10 @@
       border-radius: 6px;
       border: none;
       font-size: 14px;
+      box-sizing: border-box;
     }
     textarea {
-      height: 120px;
+      height: 100px;
       font-family: monospace;
     }
     button {
@@ -40,64 +49,84 @@
     button:hover {
       background: #0ea5e9;
     }
-    .row {
-      max-width: 700px;
-    }
     pre {
       background: #020617;
       padding: 15px;
       border-radius: 6px;
       margin-top: 20px;
       overflow-x: auto;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    .notification-list {
+        list-style-type: none;
+        padding: 0;
+    }
+    .notification-item {
+        background: #1e293b;
+        padding: 10px;
+        border-radius: 6px;
+        margin-bottom: 10px;
+        font-family: monospace;
+        font-size: 12px;
     }
   </style>
 </head>
 
 <body>
-  <h1>Trigger Notification</h1>
 
-  <div class="row">
-    <!-- TEMPLATE FLOW -->
-    <label>Template</label>
-    <select id="templateSelect">
-      <option value="">Loading templates...</option>
-    </select>
+  <div class="column">
+    <h1>E2E Notification Flow</h1>
 
-    <label>Channel</label>
-    <select id="channel">
+    <!-- SECTION 1: CREATE TEMPLATE -->
+    <h2>1. Create Template</h2>
+    <label for="templateName">Name</label>
+    <input type="text" id="templateName" value="custom_welcome">
+
+    <label for="templateDesc">Description</label>
+    <input type="text" id="templateDesc" value="A welcome message for new users.">
+
+    <label for="templateChannel">Channel</label>
+    <select id="templateChannel">
       <option value="email">Email</option>
       <option value="slack">Slack</option>
       <option value="in_app">In-App</option>
     </select>
 
-    <label>Template Version ID</label>
-    <input type="number" id="templateVersionId" />
+    <label for="templateSubject">Subject (for Email)</label>
+    <input type="text" id="templateSubject" value="Welcome {{.UserName}}!">
 
-    <label>Recipient (JSON)</label>
-    <textarea id="recipient">
-{
-  "email": "user@example.com"
-}
-    </textarea>
+    <label for="templateBody">Body</label>
+    <textarea id="templateBody">Hi {{.UserName}}, welcome to {{.AppName}}!</textarea>
 
-    <label>Payload (JSON)</label>
-    <textarea id="payload">
-{
-  "UserName": "Kshitij",
-  "AppName": "NotifyX"
-}
-    </textarea>
+    <button onclick="createTemplate()">Create Template</button>
+    <pre id="createResponse"></pre>
 
-    <label>Schedule At (optional, ISO-8601)</label>
-    <input
-      type="text"
-      id="scheduledAt"
-      placeholder="2026-01-15T10:00:00Z"
-    />
+    <!-- SECTION 2: SEND/SCHEDULE NOTIFICATION -->
+    <h2>2. Send / Schedule Notification</h2>
+    <label for="templateSelect">Select Template</label>
+    <select id="templateSelect">
+      <option value="">Loading templates...</option>
+    </select>
+
+    <label for="recipient">Recipient (JSON)</label>
+    <textarea id="recipient">{ "email": "test@example.com" }</textarea>
+
+    <label for="payload">Template Key-Value (JSON)</label>
+    <textarea id="payload">{ "UserName": "Alex", "AppName": "Gemini CLI" }</textarea>
+
+    <label for="scheduledAt">Schedule At (optional, ISO-8601 format)</label>
+    <input type="text" id="scheduledAt" placeholder="e.g., 2026-01-15T10:00:00Z">
 
     <button onclick="sendNotification()">Send / Schedule Notification</button>
+    <pre id="sendResponse"></pre>
+  </div>
 
-    <pre id="response"></pre>
+  <div class="column">
+    <!-- SECTION 3: VIEW NOTIFICATIONS -->
+    <h2>3. View Notifications</h2>
+    <button onclick="loadNotifications()">Refresh Notifications</button>
+    <ul id="notificationList" class="notification-list"></ul>
   </div>
 
   <script>
@@ -105,100 +134,157 @@
     let templates = [];
 
     // -----------------------------
-    // Load templates on page load
+    // CREATE TEMPLATE
     // -----------------------------
-    async function loadTemplates() {
-      const select = document.getElementById("templateSelect");
+    async function createTemplate() {
+      const responseBox = document.getElementById("createResponse");
+      const body = {
+        name: document.getElementById("templateName").value,
+        description: document.getElementById("templateDesc").value,
+        channel: document.getElementById("templateChannel").value,
+        subject: document.getElementById("templateSubject").value,
+        body: document.getElementById("templateBody").value,
+      };
+
+      responseBox.textContent = "⏳ Creating template...";
+
       try {
-        const res = await fetch(`${BASE_URL}/templates/summary`);
-        templates = await res.json();
-
-        select.innerHTML = `<option value="">Select template</option>`;
-
-        templates.forEach(t => {
-          const opt = document.createElement("option");
-          opt.value = t.id;
-          opt.textContent =
-            `${t.name} · ${t.channel} · v${t.active_version}`;
-          select.appendChild(opt);
+        const res = await fetch(`${BASE_URL}/templates`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
         });
+        const text = await res.text();
+        responseBox.textContent = `HTTP ${res.status}\n\n` + (text ? JSON.stringify(JSON.parse(text), null, 2) : "No Content");
+        if (res.ok) {
+          loadTemplates(); // Refresh template list after creation
+        }
       } catch (err) {
-        select.innerHTML =
-          `<option value="">❌ Failed to load templates</option>`;
+        responseBox.textContent = "❌ Network error: " + err.message;
       }
     }
 
     // -----------------------------
-    // On template select
+    // LOAD TEMPLATES
     // -----------------------------
-    document.getElementById("templateSelect").addEventListener("change", e => {
-      const template = templates.find(t => t.id == e.target.value);
-      if (!template) return;
+    async function loadTemplates() {
+      const select = document.getElementById("templateSelect");
+      select.innerHTML = `<option value="">Loading...</option>`;
+      try {
+        const res = await fetch(`${BASE_URL}/templates?type=user`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        templates = await res.json();
 
-      document.getElementById("channel").value = template.channel;
-      document.getElementById("templateVersionId").value =
-        template.active_version;
-    });
+        select.innerHTML = `<option value="">Select a user template</option>`;
+        templates.forEach(t => {
+          const opt = document.createElement("option");
+          opt.value = t.id;
+          opt.textContent = `${t.name} (ID: ${t.id}, Channel: ${t.channel})`;
+          opt.dataset.channel = t.channel;
+          select.appendChild(opt);
+        });
+      } catch (err) {
+        select.innerHTML = `<option value="">❌ Failed to load templates</option>`;
+        console.error(err);
+      }
+    }
 
     // -----------------------------
-    // Send / Schedule notification
+    // SEND / SCHEDULE NOTIFICATION
     // -----------------------------
     async function sendNotification() {
-      const channel = document.getElementById("channel").value;
-      const templateVersionId = Number(
-        document.getElementById("templateVersionId").value
-      );
-      const recipientText = document.getElementById("recipient").value;
-      const payloadText = document.getElementById("payload").value;
+      const responseBox = document.getElementById("sendResponse");
+      const templateId = document.getElementById("templateSelect").value;
+      const selectedOption = document.getElementById("templateSelect").selectedOptions[0];
+
+      if (!templateId) {
+        responseBox.textContent = "❌ Please select a template first.";
+        return;
+      }
+
+      const channel = selectedOption.dataset.channel;
       const scheduledAt = document.getElementById("scheduledAt").value;
-      const responseBox = document.getElementById("response");
 
       let recipient, payload;
-
       try {
-        recipient = JSON.parse(recipientText);
-        payload = JSON.parse(payloadText);
+        recipient = JSON.parse(document.getElementById("recipient").value);
+        payload = JSON.parse(document.getElementById("payload").value);
       } catch (e) {
-        responseBox.textContent = "❌ Invalid JSON in recipient or payload";
+        responseBox.textContent = "❌ Invalid JSON in Recipient or Payload.";
         return;
       }
 
       const body = {
         channel,
-        template_version_id: templateVersionId,
+        template_id: parseInt(templateId),
         recipient,
-        payload
+        template_key_value: payload,
       };
 
       let url = `${BASE_URL}/notifications`;
-
       if (scheduledAt) {
         body.scheduled_at = scheduledAt;
         url = `${BASE_URL}/notifications/schedule`;
       }
 
       responseBox.textContent = "⏳ Sending request...";
-
       try {
         const res = await fetch(url, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(body)
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
         });
-
         const text = await res.text();
-
-        responseBox.textContent =
-          `HTTP ${res.status}\n\n` +
-          (text ? JSON.stringify(JSON.parse(text), null, 2) : "No body");
+        responseBox.textContent = `HTTP ${res.status}\n\n` + (text ? JSON.stringify(JSON.parse(text), null, 2) : "No Content");
+        if(res.ok) {
+            setTimeout(loadNotifications, 1000); // Refresh notifications after a short delay
+        }
       } catch (err) {
         responseBox.textContent = "❌ Network error: " + err.message;
       }
     }
 
-    loadTemplates();
+    // -----------------------------
+    // LOAD NOTIFICATIONS
+    // -----------------------------
+    async function loadNotifications() {
+        const list = document.getElementById("notificationList");
+        list.innerHTML = "<li>Loading notifications...</li>";
+        try {
+            const res = await fetch(`${BASE_URL}/notifications`);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const notifications = await res.json();
+
+            list.innerHTML = "";
+            if (!notifications || notifications.length === 0) {
+                list.innerHTML = "<li>No notifications found.</li>";
+                return;
+            }
+
+            notifications.forEach(n => {
+                const item = document.createElement("li");
+                item.className = "notification-item";
+                item.innerHTML = `
+                    <b>ID:</b> ${n.id} | <b>Status:</b> ${n.status}<br>
+                    <b>Channel:</b> ${n.channel} | <b>Template ID:</b> ${n.template_id}<br>
+                    <b>Recipient:</b> ${JSON.stringify(n.recipient)}<br>
+                    <b>Scheduled:</b> ${n.scheduled_at || 'N/A'}<br>
+                    <b>Sent:</b> ${n.sent_at || 'N/A'}
+                `;
+                list.appendChild(item);
+            });
+        } catch (err) {
+            list.innerHTML = `<li>❌ Failed to load notifications: ${err.message}</li>`;
+            console.error(err);
+        }
+    }
+
+
+    // Initial load
+    document.addEventListener("DOMContentLoaded", () => {
+        loadTemplates();
+        loadNotifications();
+    });
   </script>
 </body>
 </html>
