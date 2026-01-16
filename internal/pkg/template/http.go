@@ -66,6 +66,23 @@ func (h *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
 	shared.WriteJSON(w, http.StatusOK, out)
 }
 
+func (h *Handler) InvalidateTemplateCache(w http.ResponseWriter, r *http.Request) {
+	templateIDStr := chi.URLParam(r, "id")
+	templateID, err := strconv.ParseInt(templateIDStr, 10, 64)
+	if err != nil || templateID <= 0 {
+		http.Error(w, "invalid template ID ", http.StatusBadRequest)
+		return
+	}
+
+	err = h.service.InvalidateTemplateCache(r.Context(), templateID)
+	if err != nil {
+		http.Error(w, err.Error(), shared.ErrorHttpMapper(err))
+		return
+	}
+
+	shared.WriteJSON(w, http.StatusNoContent, nil)
+}
+
 func (h *Handler) Render(w http.ResponseWriter, r *http.Request) {
 	templateIDStr := chi.URLParam(r, "id")
 	templateID, err := strconv.ParseInt(templateIDStr, 10, 64)
@@ -101,6 +118,16 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	shared.WriteJSON(w, http.StatusOK, result)
+}
+
+func (h *Handler) CacheReloadSystemTemplates(w http.ResponseWriter, r *http.Request) {
+	err := h.service.CacheReloadSystemTemplates(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), shared.ErrorHttpMapper(err))
+		return
+	}
+
+	shared.WriteJSON(w, http.StatusNoContent, nil)
 }
 
 func parseTemplateFilters(q url.Values) TemplateFilter {

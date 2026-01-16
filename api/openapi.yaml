@@ -9,6 +9,9 @@ servers:
   - url: http://localhost:8098/notify-srv/api/v1
 
 tags:
+  - name: Admin
+    description: Administrative and operational APIs
+
   - name: Notifications
     description: Notification sending and scheduling
 
@@ -17,6 +20,39 @@ tags:
 
 
 paths:
+
+  /admin/templates/system/cache/reload:
+    get:
+      tags: [Admin]
+      summary: Reload system template cache
+      description: Reloads all system templates from database into cache
+      responses:
+        "204":
+          description: System template cache reloaded successfully
+        "500":
+          description: Something went wrong on server
+
+  /admin/templates/{id}/cache/invalidate:
+    get:
+      tags: [Admin]
+      summary: Invalidate template cache by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+            example: 12
+      responses:
+        "204":
+          description: Template cache invalidated successfully
+        "400":
+          description: Invalid template ID
+        "404":
+          description: Template not found
+        "500":
+          description: Something went wrong on server
 
   /notifications:
     post:

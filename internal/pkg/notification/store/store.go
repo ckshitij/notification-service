@@ -1,4 +1,4 @@
-package mysql
+package store
 
 import (
 	"context"
@@ -22,16 +22,16 @@ func isFKViolation(err error) bool {
 	return false
 }
 
-type NotificationRepository struct {
+type notificationStore struct {
 	db  *mysqlwrapper.DB
 	log logger.Logger
 }
 
-func NewNotificationRepository(db *mysqlwrapper.DB, log logger.Logger) *NotificationRepository {
-	return &NotificationRepository{db, log}
+func NewNotificationRepository(db *mysqlwrapper.DB, log logger.Logger) *notificationStore {
+	return &notificationStore{db, log}
 }
 
-func (r *NotificationRepository) Create(ctx context.Context, n *notification.Notification) (int64, error) {
+func (r *notificationStore) Create(ctx context.Context, n *notification.Notification) (int64, error) {
 
 	recipient, err := json.Marshal(n.Recipient)
 	if err != nil {
@@ -66,15 +66,7 @@ func (r *NotificationRepository) Create(ctx context.Context, n *notification.Not
 	return id, nil
 }
 
-func (r *NotificationRepository) UpdateStatus(ctx context.Context, id int64, status notification.NotificationStatus) error {
-	_, err := r.db.ExecContext(ctx, "UpdateNotificationStatus", `UPDATE notifications SET status = ? WHERE id = ?`, status, id)
-	if err != nil {
-		r.log.Error(ctx, "failed to update notification status ", logger.Int64("notificationID", id), logger.Error(err))
-	}
-	return err
-}
-
-func (r *NotificationRepository) GetByID(ctx context.Context, id int64) (*notification.Notification, error) {
+func (r *notificationStore) GetByID(ctx context.Context, id int64) (*notification.Notification, error) {
 	row := r.db.QueryRowContext(ctx, "GetNotificationByID", GetNotificationByIDQuery, id)
 
 	var (
@@ -117,7 +109,7 @@ func (r *NotificationRepository) GetByID(ctx context.Context, id int64) (*notifi
 	return &n, nil
 }
 
-func (r *NotificationRepository) FindDue(ctx context.Context, limit int) ([]int64, error) {
+func (r *notificationStore) FindDue(ctx context.Context, limit int) ([]int64, error) {
 
 	rows, err := r.db.QueryContext(ctx, "FindDueNotifications", FindDueNotificationQuery, notification.StatusScheduled, limit)
 	if err != nil {
@@ -139,7 +131,7 @@ func (r *NotificationRepository) FindDue(ctx context.Context, limit int) ([]int6
 	return ids, nil
 }
 
-func (r *NotificationRepository) FindStuckSending(ctx context.Context, olderThan time.Duration, limit int) ([]int64, error) {
+func (r *notificationStore) FindStuckSending(ctx context.Context, olderThan time.Duration, limit int) ([]int64, error) {
 
 	rows, err := r.db.QueryContext(ctx, "FindStuckSendingNotifications", FindStuckSendingNotificationQuery, notification.StatusSending, int(olderThan.Seconds()), limit)
 	if err != nil {
@@ -160,7 +152,7 @@ func (r *NotificationRepository) FindStuckSending(ctx context.Context, olderThan
 	return ids, nil
 }
 
-func (r *NotificationRepository) List(ctx context.Context, filter notification.NotificationFilter) ([]*notification.Notification, error) {
+func (r *notificationStore) List(ctx context.Context, filter notification.NotificationFilter) ([]*notification.Notification, error) {
 
 	query, args := buildListNotificationsQuery(filter)
 
@@ -209,7 +201,7 @@ func (r *NotificationRepository) List(ctx context.Context, filter notification.N
 	return notifications, nil
 }
 
-func (r *NotificationRepository) MarkSent(ctx context.Context, id int64, sentAt time.Time) error {
+func (r *notificationStore) MarkSent(ctx context.Context, id int64, sentAt time.Time) error {
 	_, err := r.db.ExecContext(ctx, "MarkNotificationSent", `UPDATE notifications SET status = ?, sent_at = ? WHERE id = ?`, notification.StatusSent, sentAt, id)
 	if err != nil {
 		r.log.Error(ctx, "failed to mark notification ", logger.String("status", "sent"), logger.Int64("notificationID", id), logger.Error(err))
@@ -217,12 +209,19 @@ func (r *NotificationRepository) MarkSent(ctx context.Context, id int64, sentAt 
 	return err
 }
 
-func (r *NotificationRepository) AcquireForSending(ctx context.Context, id int64) (bool, error) {
+func (r *notificationStore) UpdateStatus(ctx context.Context, id int64, status notification.NotificationStatus) error {
+	_, err := r.db.ExecContext(ctx, "UpdateNotificationStatus", `UPDATE notifications SET status = ? WHERE id = ?`, status, id)
+	if err != nil {
+		r.log.Error(ctx, "failed to update notification status ", logger.Int64("notificationID", id), logger.Error(err))
+	}
+	return err
+}
 
-	res, err := r.db.ExecContext(ctx, "AcquireNotificationForSending", `UPDATE notifications SET status = ? WHERE id = ? AND status IN (?, ?, ?)`,
+func (r *notificationStore) AcquireForSending(ctx context.Context, id int64) (bool, error) {
+
+	res, err := r.db.ExecContext(ctx, "AcquireNotificationForSending", `UPDATE notifications SET status = ? WHERE id = ? AND status IN (?, ?)`,
 		notification.StatusSending,
 		id,
-		notification.StatusSending,
 		notification.StatusPending,
 		notification.StatusScheduled,
 	)
