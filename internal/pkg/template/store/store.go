@@ -1,4 +1,4 @@
-package mysql
+package store
 
 import (
 	"context"
@@ -29,17 +29,17 @@ func isDuplicateKey(err error) bool {
 	return false
 }
 
-type mysqlRepo struct {
+type templateStore struct {
 	db  *mysqlwrapper.DB
 	rdb *redis.Client
 	log logger.Logger
 }
 
 func NewTemplateRepository(db *mysqlwrapper.DB, rdb *redis.Client, log logger.Logger) template.TemplateRepository {
-	return &mysqlRepo{db, rdb, log}
+	return &templateStore{db, rdb, log}
 }
 
-func (r *mysqlRepo) Create(ctx context.Context, tpl template.Template) (int64, error) {
+func (r *templateStore) Create(ctx context.Context, tpl template.Template) (int64, error) {
 	query, args := CreateTemplateQuery, []any{tpl.Name, tpl.Description, tpl.Channel, tpl.Type, tpl.Subject, tpl.Body, tpl.CreatedBy, tpl.UpdatedBy}
 	result, err := r.db.ExecContext(ctx, "CreateNotification", query, args...)
 	if err != nil {
@@ -53,7 +53,7 @@ func (r *mysqlRepo) Create(ctx context.Context, tpl template.Template) (int64, e
 	return result.LastInsertId()
 }
 
-func (r *mysqlRepo) GetByID(ctx context.Context, templateID int64) (*template.Template, error) {
+func (r *templateStore) GetByID(ctx context.Context, templateID int64) (*template.Template, error) {
 	// Check cache first
 	key := fmt.Sprintf(templateCacheByID, templateID)
 	cached, err := r.rdb.Get(ctx, key).Result()
@@ -99,7 +99,7 @@ func (r *mysqlRepo) GetByID(ctx context.Context, templateID int64) (*template.Te
 	return &t, nil
 }
 
-func (r *mysqlRepo) CacheReloadSystemTemplates(ctx context.Context) error {
+func (r *templateStore) CacheReloadSystemTemplates(ctx context.Context) error {
 	sysTempl := shared.TemplateType(shared.SystemTemplate)
 	filter := template.TemplateFilter{
 		Type: &sysTempl,
@@ -139,7 +139,7 @@ func (r *mysqlRepo) CacheReloadSystemTemplates(ctx context.Context) error {
 	return nil
 }
 
-func (r *mysqlRepo) List(ctx context.Context, filter template.TemplateFilter) ([]*template.Template, error) {
+func (r *templateStore) List(ctx context.Context, filter template.TemplateFilter) ([]*template.Template, error) {
 	query, args := buildGetAllTemplatesQuery(filter)
 	rows, err := r.db.QueryContext(ctx, "ListNotification", query, args...)
 	if err != nil {
@@ -174,7 +174,7 @@ func (r *mysqlRepo) List(ctx context.Context, filter template.TemplateFilter) ([
 	return out, nil
 }
 
-func (r *mysqlRepo) InvalidateTemplateCache(ctx context.Context, templateID int64) error {
+func (r *templateStore) InvalidateTemplateCache(ctx context.Context, templateID int64) error {
 	keys := []string{
 		fmt.Sprintf(templateCacheByID, templateID),
 	}

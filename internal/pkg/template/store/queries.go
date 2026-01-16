@@ -1,4 +1,4 @@
-package mysql
+package store
 
 import "github.com/ckshitij/notify-srv/internal/pkg/template"
 

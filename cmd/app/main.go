@@ -13,8 +13,8 @@ import (
 	"github.com/ckshitij/notify-srv/internal/config"
 	"github.com/ckshitij/notify-srv/internal/logger"
 	"github.com/ckshitij/notify-srv/internal/pkg/notification"
-	notfysql "github.com/ckshitij/notify-srv/internal/pkg/notification/mysql"
-	tmplsql "github.com/ckshitij/notify-srv/internal/pkg/template/mysql"
+	notfystore "github.com/ckshitij/notify-srv/internal/pkg/notification/store"
+	tmplstore "github.com/ckshitij/notify-srv/internal/pkg/template/store"
 	"github.com/redis/go-redis/v9"
 
 	"github.com/ckshitij/notify-srv/internal/mysql"
@@ -42,12 +42,12 @@ func processModules(ctx context.Context, database *mysql.DB, rdb *redis.Client, 
 	}
 
 	renderer := renderer.NewGoTemplateRenderer()
-	templateRepo := tmplsql.NewTemplateRepository(database, rdb, log)
+	templateRepo := tmplstore.NewTemplateRepository(database, rdb, log)
 	templateService := template.NewTemplateService(templateRepo, renderer)
 
 	templateRepo.CacheReloadSystemTemplates(context.Background())
 
-	notificationRepo := notfysql.NewNotificationRepository(database, log)
+	notificationRepo := notfystore.NewNotificationRepository(database, log)
 	notificationSrv := notification.NewNotificationService(notificationRepo, renderer, senders, templateRepo, log)
 	scheduler := notification.NewSchedular(notificationSrv, notificationRepo, log, 5*time.Second, 50)
 

@@ -22,7 +22,7 @@ tags:
 paths:
 
   /admin/templates/system/cache/reload:
-    post:
+    get:
       tags: [Admin]
       summary: Reload system template cache
       description: Reloads all system templates from database into cache
@@ -33,7 +33,7 @@ paths:
           description: Something went wrong on server
 
   /admin/templates/{id}/cache/invalidate:
-    post:
+    get:
       tags: [Admin]
       summary: Invalidate template cache by ID
       parameters:
