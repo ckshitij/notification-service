@@ -43,8 +43,8 @@ sequenceDiagram
 This project includes a simple web interface to demonstrate and test the complete end-to-end flow of creating templates and sending notifications.
 Access the URL to serve the HTML `http://localhost:8098`
 
-- **Ensure the service is running** by following the steps above (`docker-compose up -d --build`).
-- **Use the Interface**:
+ - **Ensure the service is running** by following the steps above (`docker-compose up -d --build`).
+ - **Use the Interface**:
     *   **Create Templates**: Use the form on the left to create new notification templates for different channels.
     *   **Send Notifications**: Once a template is created, it will appear in the dropdown. You can then select it, provide recipient details and a payload, and send a notification immediately or schedule it for later.
     *   **View Notifications**: The right-hand panel shows a list of recent notifications and their statuses, which you can refresh.
@@ -107,16 +107,6 @@ Once the database container is healthy, run the database migrations to set up th
 ```bash
 go run cmd/migrator/main.go
 ```
-
-## Web UI for End-to-End Testing
-
-This project includes a simple web interface to demonstrate and test the complete end-to-end flow of creating templates and sending notifications.
-Access the URL to serve the HTML `http://localhost:8098`
-  **Ensure the service is running** by following the steps above (`docker-compose up -d --build`).
-  **Use the Interface**:
-    *   **Create Templates**: Use the form on the left to create new notification templates for different channels.
-    *   **Send Notifications**: Once a template is created, it will appear in the dropdown. You can then select it, provide recipient details and a payload, and send a notification immediately or schedule it for later.
-    *   **View Notifications**: The right-hand panel shows a list of recent notifications and their statuses, which you can refresh.
 
 ### 4. Accessing Services
 
