@@ -36,6 +36,8 @@ sequenceDiagram
 
 ```
 
+> **Note on Kafka**: The `docker-compose.yml` and configuration files include setup for Kafka, as they are planned for future integration to enhance scalability. However, the current implementation does not yet utilize them, but work in progress.
+
 ## Features
 
 - **Multi-Channel Support**: Easily send notifications via Email, Slack, and In-App channels.
@@ -54,8 +56,6 @@ sequenceDiagram
 - **Monitoring**: Prometheus & Grafana
 - **Local Email Testing**: MailHog
 - **Containerization**: Docker & Docker Compose
-
-> **Note on Kafka and Redis**: The `docker-compose.yml` and configuration files include setup for Kafka and Redis, as they are planned for future integration to enhance scalability and caching. However, the current implementation does not yet utilize them.
 
 ## Prerequisites
 
