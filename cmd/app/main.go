@@ -48,6 +48,9 @@ func processModules(ctx context.Context, database *mysql.DB, rdb *redis.Client, 
 		log.Fatal(ctx, "failed to create kafka producer", logger.Error(err))
 	}
 
+	workers := runtime.NumCPU() * 2
+	groupID := "notification-consumer"
+
 	renderer := renderer.NewGoTemplateRenderer()
 	templateRepo := tmplstore.NewTemplateRepository(database, rdb, log)
 	templateService := template.NewTemplateService(templateRepo, renderer)
@@ -55,11 +58,8 @@ func processModules(ctx context.Context, database *mysql.DB, rdb *redis.Client, 
 	templateRepo.CacheReloadSystemTemplates(context.Background())
 
 	notificationRepo := notfystore.NewNotificationRepository(database, log)
-	notificationSrv := notification.NewNotificationService(notificationRepo, renderer, senders, templateRepo, log, producer, cfg)
-	scheduler := notification.NewSchedular(notificationSrv, notificationRepo, log, 5*time.Second, 50)
-
-	workers := runtime.NumCPU() * 2
-	groupID := "notification-consumer"
+	notificationSrv := notification.NewNotificationService(notificationRepo, renderer, senders, templateRepo, log, producer, &cfg.Kafka)
+	scheduler := notification.NewSchedular(notificationRepo, log, 5*time.Second, 50, workers, producer, &cfg.Kafka)
 
 	for _, topic := range cfg.Kafka.Topics {
 		consumer, err := kafka.NewConsumer(cfg.Kafka.Brokers, groupID, topic, notificationSrv, log, workers)

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/ckshitij/notify-srv/internal/config"
@@ -22,7 +23,7 @@ type serviceImpl struct {
 	templateRepo template.TemplateRepository
 	log          logger.Logger
 	producer     *kafka.Producer
-	cfg          *config.Config
+	kafkaCfg     *config.KafkaConfig
 }
 
 func NewNotificationService(
@@ -32,13 +33,13 @@ func NewNotificationService(
 	templateRepo template.TemplateRepository,
 	log logger.Logger,
 	producer *kafka.Producer,
-	cfg *config.Config,
+	kafkaCfg *config.KafkaConfig,
 ) Service {
-	return &serviceImpl{repo, renderer, senders, templateRepo, log, producer, cfg}
+	return &serviceImpl{repo, renderer, senders, templateRepo, log, producer, kafkaCfg}
 }
 
 func (s *serviceImpl) SendNow(ctx context.Context, n *Notification) (int64, error) {
-
+	// 1. Persist notification first (source of truth)
 	n.Status = StatusPending
 
 	id, err := s.repo.Create(ctx, n)
@@ -46,20 +47,31 @@ func (s *serviceImpl) SendNow(ctx context.Context, n *Notification) (int64, erro
 		return -1, err
 	}
 
+	// 2. Serialize payload (notification ID only)
 	msg, err := json.Marshal(id)
 	if err != nil {
 		s.log.Error(ctx, "failed to marshal notification id", logger.Error(err))
 		return -1, err
 	}
 
-	topic, ok := s.cfg.Kafka.Topics[string(n.Channel)]
+	// 3. Resolve Kafka topic by channel
+	topic, ok := s.kafkaCfg.Topics[string(n.Channel)]
 	if !ok {
 		return -1, fmt.Errorf("kafka topic not found for channel %s", n.Channel)
 	}
 
-	_, _, err = s.producer.SendMessage(topic, msg)
+	// 4. Use notification ID as Kafka key (ordering + idempotency)
+	key := strconv.FormatInt(id, 10)
+
+	_, _, err = s.producer.SendMessage(topic, key, msg)
 	if err != nil {
-		s.log.Error(ctx, "failed to send message to kafka", logger.Error(err))
+		s.log.Error(
+			ctx,
+			"failed to send message to kafka",
+			logger.Error(err),
+			logger.Int64("notification_id", id),
+			logger.String("topic", topic),
+		)
 		return -1, err
 	}
 

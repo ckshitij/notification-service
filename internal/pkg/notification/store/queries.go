@@ -25,7 +25,8 @@ const (
 	`
 
 	FindDueNotificationQuery = `
-		SELECT id
+		SELECT 
+			id, channel
 		FROM notifications
 		WHERE status = ?
 		  AND scheduled_at <= UTC_TIMESTAMP()
@@ -34,7 +35,8 @@ const (
 	`
 
 	FindStuckSendingNotificationQuery = `
-		SELECT id
+		SELECT
+			id, channel
 		FROM notifications
 		WHERE status = ?
 		  AND updated_at < NOW() - INTERVAL ? SECOND
