@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"runtime"
 	"syscall"
 	"time"
 
@@ -57,8 +58,11 @@ func processModules(ctx context.Context, database *mysql.DB, rdb *redis.Client, 
 	notificationSrv := notification.NewNotificationService(notificationRepo, renderer, senders, templateRepo, log, producer, cfg)
 	scheduler := notification.NewSchedular(notificationSrv, notificationRepo, log, 5*time.Second, 50)
 
+	workers := runtime.NumCPU() * 2
+	groupID := "notification-consumer"
+
 	for _, topic := range cfg.Kafka.Topics {
-		consumer, err := kafka.NewConsumer(cfg.Kafka.Brokers, topic, notificationSrv, log)
+		consumer, err := kafka.NewConsumer(cfg.Kafka.Brokers, groupID, topic, notificationSrv, log, workers)
 		if err != nil {
 			log.Fatal(ctx, "failed to create kafka consumer", logger.Error(err))
 		}

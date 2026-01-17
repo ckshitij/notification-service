@@ -27,7 +27,7 @@ kafka:
   topics:
     email: "notifications-email"
     slack: "notifications-slack"
-    in_app: "notifications-in_app"
+    in_app: "notifications-in-app"
 
 prometheus:
   enabled: true
