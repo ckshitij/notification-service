@@ -2,9 +2,13 @@ package notification
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"time"
 
+	"github.com/ckshitij/notify-srv/internal/config"
+	"github.com/ckshitij/notify-srv/internal/kafka"
 	"github.com/ckshitij/notify-srv/internal/logger"
 	"github.com/ckshitij/notify-srv/internal/pkg/renderer"
 	"github.com/ckshitij/notify-srv/internal/pkg/template"
@@ -17,6 +21,8 @@ type serviceImpl struct {
 	senders      map[shared.Channel]Sender
 	templateRepo template.TemplateRepository
 	log          logger.Logger
+	producer     *kafka.Producer
+	cfg          *config.Config
 }
 
 func NewNotificationService(
@@ -25,8 +31,10 @@ func NewNotificationService(
 	senders map[shared.Channel]Sender,
 	templateRepo template.TemplateRepository,
 	log logger.Logger,
-) *serviceImpl {
-	return &serviceImpl{repo, renderer, senders, templateRepo, log}
+	producer *kafka.Producer,
+	cfg *config.Config,
+) Service {
+	return &serviceImpl{repo, renderer, senders, templateRepo, log, producer, cfg}
 }
 
 func (s *serviceImpl) SendNow(ctx context.Context, n *Notification) (int64, error) {
@@ -38,13 +46,22 @@ func (s *serviceImpl) SendNow(ctx context.Context, n *Notification) (int64, erro
 		return -1, err
 	}
 
-	go func() {
-		ct := context.Background()
-		err := s.Process(ct, id)
-		if err != nil {
-			s.log.Error(ct, "failed to process", logger.Error(err))
-		}
-	}()
+	msg, err := json.Marshal(id)
+	if err != nil {
+		s.log.Error(ctx, "failed to marshal notification id", logger.Error(err))
+		return -1, err
+	}
+
+	topic, ok := s.cfg.Kafka.Topics[string(n.Channel)]
+	if !ok {
+		return -1, fmt.Errorf("kafka topic not found for channel %s", n.Channel)
+	}
+
+	_, _, err = s.producer.SendMessage(topic, msg)
+	if err != nil {
+		s.log.Error(ctx, "failed to send message to kafka", logger.Error(err))
+		return -1, err
+	}
 
 	return id, nil
 }

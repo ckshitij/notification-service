@@ -2,12 +2,23 @@
 
 A robust, scalable, and observable notification service built with Go. It provides a centralized system for managing and sending notifications across multiple channels like Email, Slack, and In-App.
 
+## How the Changes Help the Service
+
+The integration of Kafka into the notification service provides several key benefits:
+
+- **Scalability:** By using Kafka as a message broker, the service can handle a much higher volume of notification requests. The request handling is decoupled from the notification processing, allowing each part to be scaled independently.
+- **Reliability:** Kafka's at-least-once delivery guarantee ensures that notifications are not lost even if a worker crashes. The message will be re-processed by another worker, making the delivery more reliable.
+- **Resilience:** The use of a message queue makes the service more resilient to failures. If a downstream service (like an email server) is temporarily unavailable, the messages will remain in the Kafka topic and can be processed later when the service is back online.
+- **Improved Performance:** By offloading the notification processing to a separate set of workers, the main request-handling part of the service can respond to user requests much faster. This improves the overall performance and user experience.
+- **Channel-based Topics:** The service now uses different Kafka topics for different notification channels (e.g., `notifications-email`, `notifications-slack`). This provides better isolation, scalability, and flexibility. You can monitor and scale each channel independently.
+
 ## Flow
 
 ```mermaid
 sequenceDiagram
     participant Client
     participant NS as Notification Service
+    participant Kafka
     participant DB as Database
     participant Email as Email Service
     participant Slack
@@ -15,10 +26,11 @@ sequenceDiagram
 
     Client->>NS: POST /v1/notifications (Send Notification)
     NS->>DB: Create Notification (status: pending)
+    NS->>Kafka: Publish Notification ID
     NS-->>Client: 202 Accepted (notification ID)
 
     alt Asynchronous Processing
-        NS->>NS: go Process(notificationID)
+        Kafka->>NS: Consume Notification ID
         NS->>DB: Acquire Notification for sending
         NS->>DB: Get Template
         NS->>NS: Render Template
@@ -33,10 +45,7 @@ sequenceDiagram
 
         NS->>DB: Update Notification (status: sent/failed)
     end
-
 ```
-
-> **Note on Kafka**: The `docker-compose.yml` and configuration files include setup for Kafka, as they are planned for future integration to enhance scalability. However, the current implementation does not yet utilize them, but work in progress.
 
 ## Web UI for End-to-End Testing
 
@@ -54,7 +63,7 @@ Access the URL to serve the HTML `http://localhost:8098`
 - **Multi-Channel Support**: Easily send notifications via Email, Slack, and In-App channels.
 - **Dynamic Templates**: Utilizes Go's templating engine (`text/template`) for dynamic and version-controlled notification content.
 - **RESTful API**: A clean and simple API for managing templates and sending notifications. (See `api/openapi.yaml` for the full specification).
-- **Asynchronous Processing**: Leverages Goroutines for processing notification requests asynchronously, ensuring high throughput and resilience.
+- **Asynchronous Processing**: Leverages Kafka for processing notification requests asynchronously, ensuring high throughput and resilience.
 - **Database Migrations**: Manages database schema changes cleanly using a dedicated migrator tool.
 - **Observability**: Exposes application metrics in Prometheus format for easy monitoring and alerting.
 - **Containerized**: Comes with a complete `docker-compose` setup for all dependencies, enabling a one-command local environment startup.
@@ -64,6 +73,7 @@ Access the URL to serve the HTML `http://localhost:8098`
 - **Language**: Go (v1.24)
 - **Framework**: Chi (for routing) & Viper (for configuration)
 - **Database**: MySQL 8.4
+- **Message Broker**: Kafka
 - **Monitoring**: Prometheus & Grafana
 - **Local Email Testing**: MailHog
 - **Containerization**: Docker & Docker Compose
@@ -136,6 +146,7 @@ go test ./...
 - `deployments/`: Docker and `docker-compose` files for local development.
 - `internal/`: All private application logic.
   - `config/`: Configuration loading logic.
+  - `kafka/`: Kafka producer and consumer.
   - `logger/`: Application logger setup.
   - `metrics/`: Prometheus metrics setup.
   - `pkg/`: Core business logic for notifications, templates, and senders.
@@ -153,7 +164,7 @@ The `internal/pkg` directory contains the core business logic for the notificati
 
 ### `notification`
 - **Purpose:** Orchestrates the creation, scheduling, and sending of notifications.
-- **Functionality:** This is the central service. It receives requests to send notifications, retrieves the appropriate template using the `template` service, renders the content, and then dispatches it through various channels. It also manages the state of notifications (e.g., pending, sent, failed) in the database.
+- **Functionality:** This is the central service. It receives requests to send notifications, creates a notification record in the database, and publishes the notification ID to a Kafka topic. A Kafka consumer then picks up the message and processes the notification.
 
 ### `renderer`
 - **Purpose:** Renders notification content from templates.

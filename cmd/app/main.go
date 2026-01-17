@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/ckshitij/notify-srv/internal/config"
+	"github.com/ckshitij/notify-srv/internal/kafka"
 	"github.com/ckshitij/notify-srv/internal/logger"
 	"github.com/ckshitij/notify-srv/internal/pkg/notification"
 	notfystore "github.com/ckshitij/notify-srv/internal/pkg/notification/store"
@@ -41,6 +42,11 @@ func processModules(ctx context.Context, database *mysql.DB, rdb *redis.Client, 
 		shared.ChannelInApp: inapp.New(database.Conn()),
 	}
 
+	producer, err := kafka.NewProducer(cfg.Kafka.Brokers)
+	if err != nil {
+		log.Fatal(ctx, "failed to create kafka producer", logger.Error(err))
+	}
+
 	renderer := renderer.NewGoTemplateRenderer()
 	templateRepo := tmplstore.NewTemplateRepository(database, rdb, log)
 	templateService := template.NewTemplateService(templateRepo, renderer)
@@ -48,8 +54,16 @@ func processModules(ctx context.Context, database *mysql.DB, rdb *redis.Client, 
 	templateRepo.CacheReloadSystemTemplates(context.Background())
 
 	notificationRepo := notfystore.NewNotificationRepository(database, log)
-	notificationSrv := notification.NewNotificationService(notificationRepo, renderer, senders, templateRepo, log)
+	notificationSrv := notification.NewNotificationService(notificationRepo, renderer, senders, templateRepo, log, producer, cfg)
 	scheduler := notification.NewSchedular(notificationSrv, notificationRepo, log, 5*time.Second, 50)
+
+	for _, topic := range cfg.Kafka.Topics {
+		consumer, err := kafka.NewConsumer(cfg.Kafka.Brokers, topic, notificationSrv, log)
+		if err != nil {
+			log.Fatal(ctx, "failed to create kafka consumer", logger.Error(err))
+		}
+		go consumer.Start(ctx)
+	}
 
 	go scheduler.Run(ctx)
 

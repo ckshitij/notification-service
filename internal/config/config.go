@@ -67,8 +67,8 @@ type RedisConfig struct {
 }
 
 type KafkaConfig struct {
-	Brokers []string `mapstructure:"brokers"`
-	Topic   string   `mapstructure:"topic"`
+	Brokers []string          `mapstructure:"brokers"`
+	Topics  map[string]string `mapstructure:"topics"`
 }
 
 type PrometheusConfig struct {

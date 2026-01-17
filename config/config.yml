@@ -24,7 +24,10 @@ redis:
 kafka:
   brokers:
     - "notif-kafka:9092"
-  topic: "notifications"
+  topics:
+    email: "notifications-email"
+    slack: "notifications-slack"
+    in_app: "notifications-in_app"
 
 prometheus:
   enabled: true
