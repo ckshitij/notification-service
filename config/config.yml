@@ -40,4 +40,4 @@ smtp:
   from: "no-reply@notify.local"
 
 slack:
-  webhook_url: ""
+  webhook_url: "https://hooks.slack.com/services/xxxxxxxxx/xxxxxxxxxxx/xxxxxxxxxxxxxxxxxxxxxxx"

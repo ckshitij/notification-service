@@ -60,18 +60,18 @@ func (s *Scheduler) fetchCandidates(ctx context.Context) ([]NotificationSchedule
 }
 
 func (s *Scheduler) tick(ctx context.Context) {
-	notificationIds, err := s.fetchCandidates(ctx)
+	notifications, err := s.fetchCandidates(ctx)
 	if err != nil {
 		return
 	}
 
-	if len(notificationIds) == 0 {
+	if len(notifications) == 0 {
 		return
 	}
 
 	workerPool := make(chan struct{}, s.workers)
 
-	for _, n := range notificationIds {
+	for _, n := range notifications {
 		select {
 		case <-ctx.Done():
 			return
