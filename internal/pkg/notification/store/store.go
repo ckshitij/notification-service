@@ -109,7 +109,7 @@ func (r *notificationStore) GetByID(ctx context.Context, id int64) (*notificatio
 	return &n, nil
 }
 
-func (r *notificationStore) FindDue(ctx context.Context, limit int) ([]int64, error) {
+func (r *notificationStore) FindDue(ctx context.Context, limit int) ([]notification.NotificationScheduled, error) {
 
 	rows, err := r.db.QueryContext(ctx, "FindDueNotifications", FindDueNotificationQuery, notification.StatusScheduled, limit)
 	if err != nil {
@@ -118,20 +118,20 @@ func (r *notificationStore) FindDue(ctx context.Context, limit int) ([]int64, er
 	}
 	defer rows.Close()
 
-	var ids []int64
+	var results []notification.NotificationScheduled
 	for rows.Next() {
-		var id int64
-		if err := rows.Scan(&id); err != nil {
+		var n notification.NotificationScheduled
+		if err := rows.Scan(&n.ID, &n.Channel); err != nil {
 			r.log.Error(ctx, "failed to scan due notifications ids", logger.Error(err))
 			return nil, err
 		}
-		ids = append(ids, id)
+		results = append(results, n)
 	}
 
-	return ids, nil
+	return results, nil
 }
 
-func (r *notificationStore) FindStuckSending(ctx context.Context, olderThan time.Duration, limit int) ([]int64, error) {
+func (r *notificationStore) FindStuckSending(ctx context.Context, olderThan time.Duration, limit int) ([]notification.NotificationScheduled, error) {
 
 	rows, err := r.db.QueryContext(ctx, "FindStuckSendingNotifications", FindStuckSendingNotificationQuery, notification.StatusSending, int(olderThan.Seconds()), limit)
 	if err != nil {
@@ -140,16 +140,16 @@ func (r *notificationStore) FindStuckSending(ctx context.Context, olderThan time
 	}
 	defer rows.Close()
 
-	var ids []int64
+	var results []notification.NotificationScheduled
 	for rows.Next() {
-		var id int64
-		if err := rows.Scan(&id); err != nil {
+		var n notification.NotificationScheduled
+		if err := rows.Scan(&n.ID, &n.Channel); err != nil {
 			r.log.Error(ctx, "failed to scan stuck notifications ids", logger.Error(err))
 			return nil, err
 		}
-		ids = append(ids, id)
+		results = append(results, n)
 	}
-	return ids, nil
+	return results, nil
 }
 
 func (r *notificationStore) List(ctx context.Context, filter notification.NotificationFilter) ([]*notification.Notification, error) {

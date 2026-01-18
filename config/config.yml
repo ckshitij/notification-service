@@ -24,7 +24,10 @@ redis:
 kafka:
   brokers:
     - "notif-kafka:9092"
-  topic: "notifications"
+  topics:
+    email: "notifications-email"
+    slack: "notifications-slack"
+    in_app: "notifications-in-app"
 
 prometheus:
   enabled: true
@@ -37,4 +40,4 @@ smtp:
   from: "no-reply@notify.local"
 
 slack:
-  webhook_url: ""
+  webhook_url: "https://hooks.slack.com/services/xxxxxxxxx/xxxxxxxxxxx/xxxxxxxxxxxxxxxxxxxxxxx"

@@ -15,11 +15,12 @@ sending → failed
 type NotificationStatus string
 
 const (
-	StatusPending   NotificationStatus = "pending"
-	StatusScheduled NotificationStatus = "scheduled"
-	StatusSending   NotificationStatus = "sending"
-	StatusSent      NotificationStatus = "sent"
-	StatusFailed    NotificationStatus = "failed"
+	StatusPending    NotificationStatus = "pending"
+	StatusScheduled  NotificationStatus = "scheduled"
+	StatusSending    NotificationStatus = "sending"
+	StatusSent       NotificationStatus = "sent"
+	StatusFailed     NotificationStatus = "failed"
+	StatusDispatched NotificationStatus = "dispatched"
 )
 
 type NotificationRecipient struct {
@@ -39,6 +40,11 @@ type Notification struct {
 	SentAt           *time.Time            `json:"sent_at,omitempty"`
 	CreatedAt        time.Time             `json:"created_at"`
 	UpdatedAt        time.Time             `json:"updated_at"`
+}
+
+type NotificationScheduled struct {
+	ID      int64          `json:"id"`
+	Channel shared.Channel `json:"channel"`
 }
 
 type NotificationFilter struct {
