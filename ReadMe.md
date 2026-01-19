@@ -5,6 +5,49 @@ A robust, scalable, and observable notification service built with Go. It provid
 ## Flow
 
 ```mermaid
+flowchart TB
+    subgraph API_Layer["API Layer"]
+        Clients
+        API
+    end
+
+    subgraph Services["Services"]
+        NotificationSvc
+        TemplateSvc
+    end
+
+    subgraph Infra["Infrastructure"]
+        Kafka
+        Processor
+        Schedular
+        MySQL
+        Redis
+    end
+
+    subgraph Channels["Delivery Channels"]
+        Email
+        Slack
+        InApp
+    end
+
+    Clients --> API
+    API --> NotificationSvc
+    API --> TemplateSvc
+    NotificationSvc --> Kafka
+    NotificationSvc --> MySQL
+    MySQL <--> Schedular
+    Schedular --> Kafka
+    Kafka --> Processor
+    Processor --> MySQL
+    Processor --> Redis
+    Processor --> Email
+    Processor --> Slack
+    Processor --> InApp
+    TemplateSvc --> MySQL
+    TemplateSvc --> Redis
+```
+
+```mermaid
 sequenceDiagram
     participant Client
     participant NS as Notification Service
