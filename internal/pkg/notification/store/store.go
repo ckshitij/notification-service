@@ -202,10 +202,34 @@ func (r *notificationStore) List(ctx context.Context, filter notification.Notifi
 }
 
 func (r *notificationStore) MarkSent(ctx context.Context, id int64, sentAt time.Time) error {
-	_, err := r.db.ExecContext(ctx, "MarkNotificationSent", `UPDATE notifications SET status = ?, sent_at = ? WHERE id = ?`, notification.StatusSent, sentAt, id)
-	if err != nil {
-		r.log.Error(ctx, "failed to mark notification ", logger.String("status", "sent"), logger.Int64("notificationID", id), logger.Error(err))
-	}
+	_, err := r.db.ExecContext(
+		ctx,
+		"MarkNotificationSent",
+		UpdateSentNotificationQuery,
+		notification.StatusSent,
+		sentAt,
+		id,
+	)
+	return err
+}
+
+func (r *notificationStore) MarkFailed(ctx context.Context, id int64, code string, message string, metadata map[string]any) error {
+
+	metaJSON, _ := json.Marshal(metadata)
+	now := time.Now()
+
+	_, err := r.db.ExecContext(
+		ctx,
+		"MarkNotificationFailed",
+		UpdateFailedNotificationQuery,
+		notification.StatusFailed,
+		code,
+		message,
+		metaJSON,
+		now,
+		id,
+	)
+
 	return err
 }
 

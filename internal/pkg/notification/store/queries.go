@@ -42,6 +42,29 @@ const (
 		  AND updated_at < NOW() - INTERVAL ? SECOND
 		LIMIT ?
 	`
+
+	UpdateFailedNotificationQuery = `
+		UPDATE notifications
+		SET status = ?,
+		    error_code = ?,
+		    error_message = ?,
+		    error_metadata = ?,
+		    retry_count = retry_count + 1,
+		    last_error_at = ?,
+		    updated_at = NOW()
+		WHERE id = ?
+	`
+
+	UpdateSentNotificationQuery = `
+		UPDATE notifications
+		SET status = ?,
+		    sent_at = ?,
+		    error_code = NULL,
+		    error_message = NULL,
+		    error_metadata = NULL,
+		    updated_at = NOW()
+		WHERE id = ?
+	`
 )
 
 func buildListNotificationsQuery(filter notification.NotificationFilter) (string, []any) {

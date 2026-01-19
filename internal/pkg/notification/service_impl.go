@@ -86,18 +86,11 @@ func (s *serviceImpl) Schedule(ctx context.Context, n *Notification, when time.T
 	return s.repo.Create(ctx, n)
 }
 
-func (s *serviceImpl) Process(
-	ctx context.Context,
-	notificationID int64,
-) error {
+func (s *serviceImpl) Process(ctx context.Context, notificationID int64) error {
 
 	acquired, err := s.repo.AcquireForSending(ctx, notificationID)
-	if err != nil {
+	if err != nil || !acquired {
 		return err
-	}
-	if !acquired {
-		s.log.Warn(ctx, "failed to aquire the record", logger.String("status", "sending"), logger.Int64("notificationID", notificationID))
-		// return nil
 	}
 
 	n, err := s.repo.GetByID(ctx, notificationID)
@@ -105,50 +98,59 @@ func (s *serviceImpl) Process(
 		return err
 	}
 
-	// Load template version
-	tplVersion, err := s.templateRepo.GetByID(ctx, n.TemplateID)
-	if err != nil || tplVersion == nil {
-		s.log.Warn(ctx, "failed to get template info",
-			logger.Int64("templateID", n.TemplateID),
-			logger.Int64("notificationID", notificationID),
-			logger.Error(err),
-		)
-		s.repo.UpdateStatus(ctx, n.ID, StatusFailed)
-		return err
-	}
-
-	s.log.Info(ctx, "received data", logger.Field{
-		Key:   "data",
-		Value: tplVersion,
-	})
-
-	// Render content
-	content, err := s.renderer.Render(tplVersion.Subject, tplVersion.Body, n.TemplateKeyValue)
+	tpl, err := s.templateRepo.GetByID(ctx, n.TemplateID)
 	if err != nil {
-		s.repo.UpdateStatus(ctx, n.ID, StatusFailed)
+		_ = s.repo.MarkFailed(
+			ctx,
+			n.ID,
+			"TEMPLATE_NOT_FOUND",
+			err.Error(),
+			nil,
+		)
 		return err
 	}
 
-	// Resolve sender
+	content, err := s.renderer.Render(
+		tpl.Subject,
+		tpl.Body,
+		n.TemplateKeyValue,
+	)
+	if err != nil {
+		_ = s.repo.MarkFailed(
+			ctx,
+			n.ID,
+			"TEMPLATE_RENDER_FAILED",
+			err.Error(),
+			map[string]any{"template_id": tpl.ID},
+		)
+		return err
+	}
+
 	sender, ok := s.senders[n.Channel]
 	if !ok {
-		s.repo.UpdateStatus(ctx, n.ID, StatusFailed)
-		return errors.New("sender not configured")
+		err := errors.New("sender not configured")
+		_ = s.repo.MarkFailed(
+			ctx,
+			n.ID,
+			"SENDER_NOT_CONFIGURED",
+			err.Error(),
+			map[string]any{"channel": n.Channel},
+		)
+		return err
 	}
 
-	// Send
 	if err := sender.Send(ctx, *n, content); err != nil {
-		s.repo.UpdateStatus(ctx, n.ID, StatusFailed)
+		_ = s.repo.MarkFailed(
+			ctx,
+			n.ID,
+			"SEND_FAILED",
+			err.Error(),
+			map[string]any{"channel": n.Channel},
+		)
 		return err
 	}
 
-	// Mark sent
-	now := time.Now()
-	if err := s.repo.MarkSent(ctx, n.ID, now); err != nil {
-		return err
-	}
-
-	return nil
+	return s.repo.MarkSent(ctx, n.ID, time.Now())
 }
 
 func (s *serviceImpl) GetByID(ctx context.Context, notificationID int64) (*Notification, error) {
