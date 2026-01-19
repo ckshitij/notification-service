@@ -2,16 +2,6 @@
 
 A robust, scalable, and observable notification service built with Go. It provides a centralized system for managing and sending notifications across multiple channels like Email, Slack, and In-App.
 
-## How the Changes Help the Service
-
-The integration of Kafka into the notification service provides several key benefits:
-
-- **Scalability:** By using Kafka as a message broker, the service can handle a much higher volume of notification requests. The request handling is decoupled from the notification processing, allowing each part to be scaled independently.
-- **Reliability:** Kafka's at-least-once delivery guarantee ensures that notifications are not lost even if a worker crashes. The message will be re-processed by another worker, making the delivery more reliable.
-- **Resilience:** The use of a message queue makes the service more resilient to failures. If a downstream service (like an email server) is temporarily unavailable, the messages will remain in the Kafka topic and can be processed later when the service is back online.
-- **Improved Performance:** By offloading the notification processing to a separate set of workers, the main request-handling part of the service can respond to user requests much faster. This improves the overall performance and user experience.
-- **Channel-based Topics:** The service now uses different Kafka topics for different notification channels (e.g., `notifications-email`, `notifications-slack`). This provides better isolation, scalability, and flexibility. You can monitor and scale each channel independently.
-
 ## Flow
 
 ```mermaid
@@ -180,3 +170,13 @@ The `internal/pkg` directory contains the core business logic for the notificati
 ### `schedular`
 - **Purpose:** Processes scheduled and stuck notifications.
 - **Functionality:** A background worker that periodically queries the database for notifications that are due to be sent or have been stuck in a "sending" state for too long. It then enqueues them for processing by the `notification` service.
+
+### How the Kafka Changes Help the Service
+
+The integration of Kafka into the notification service provides several key benefits:
+
+- **Scalability:** By using Kafka as a message broker, the service can handle a much higher volume of notification requests. The request handling is decoupled from the notification processing, allowing each part to be scaled independently.
+- **Reliability:** Kafka's at-least-once delivery guarantee ensures that notifications are not lost even if a worker crashes. The message will be re-processed by another worker, making the delivery more reliable.
+- **Resilience:** The use of a message queue makes the service more resilient to failures. If a downstream service (like an email server) is temporarily unavailable, the messages will remain in the Kafka topic and can be processed later when the service is back online.
+- **Improved Performance:** By offloading the notification processing to a separate set of workers, the main request-handling part of the service can respond to user requests much faster. This improves the overall performance and user experience.
+- **Channel-based Topics:** The service now uses different Kafka topics for different notification channels (e.g., `notifications-email`, `notifications-slack`). This provides better isolation, scalability, and flexibility. You can monitor and scale each channel independently.
