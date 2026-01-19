@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/ckshitij/notify-srv/internal/pkg/renderer"
-	"github.com/ckshitij/notify-srv/internal/shared"
 )
 
 type ServiceImpl struct {
@@ -20,9 +19,6 @@ func NewTemplateService(repo TemplateRepository, renderer renderer.Renderer) Tem
 }
 
 func (s *ServiceImpl) Create(ctx context.Context, tpl Template) (int64, error) {
-	if tpl.Type == shared.SystemTemplate {
-		return -1, shared.ErrSystemTemplateNotPermitted
-	}
 	return s.repo.Create(ctx, tpl)
 }
 

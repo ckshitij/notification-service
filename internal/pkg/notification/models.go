@@ -36,6 +36,11 @@ type Notification struct {
 	Recipient        NotificationRecipient `json:"recipient"`
 	TemplateKeyValue map[string]any        `json:"template_key_value"`
 	Status           NotificationStatus    `json:"status"`
+	ErrorCode        *string               `json:"-"`
+	ErrorMessage     *string               `json:"-"`
+	ErrorMetadata    map[string]any        `json:"-"`
+	RetryCount       int                   `json:"-"`
+	LastErrorAt      *time.Time            `json:"-"`
 	ScheduledAt      *time.Time            `json:"scheduled_at,omitempty"`
 	SentAt           *time.Time            `json:"sent_at,omitempty"`
 	CreatedAt        time.Time             `json:"created_at"`
